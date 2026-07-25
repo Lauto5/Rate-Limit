@@ -1,0 +1,45 @@
+# --- Maven ---
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.next
+pom.xml.release.Backup
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# --- IDEs (IntelliJ, Eclipse, VS Code) ---
+.idea/
+*.iml
+*.iws
+*.ipr
+.project
+.classpath
+.settings/
+.vscode/
+.factorypath
+
+# --- Entornos y Editores (Neovim / Emacs) ---
+*.swp
+*.swo
+*~
+# Si usas configuraciones locales de Neovim/LSP en el directorio:
+.session.vim
+.lsp/
+
+# --- Sistema Operativo ---
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+.directory
