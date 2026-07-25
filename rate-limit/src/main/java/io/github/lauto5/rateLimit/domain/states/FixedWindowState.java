@@ -1,12 +1,14 @@
 package io.github.lauto5.rateLimit.domain.states;
 
+import java.time.Instant;
+
 public class FixedWindowState implements AlgorithmState {
 
 	private final int count;
 	
-	private final long windowStart;
+	private final Instant windowStart;
 
-	public FixedWindowState(int count, long windowStart) {
+	public FixedWindowState(int count, Instant windowStart) {
 		super();
 		this.count = count;
 		this.windowStart = windowStart;
@@ -16,7 +18,7 @@ public class FixedWindowState implements AlgorithmState {
 		return count;
 	}
 
-	public long getWindowStart() {
+	public Instant getWindowStart() {
 		return windowStart;
 	}
 	

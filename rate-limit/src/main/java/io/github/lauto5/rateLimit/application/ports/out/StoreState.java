@@ -1,32 +1,27 @@
 package io.github.lauto5.rateLimit.application.ports.out;
 
+import java.time.Instant;
+
 import io.github.lauto5.rateLimit.domain.states.AlgorithmState;
 
-public class StoreState<T extends AlgorithmState> {
+public final class StoreState<T extends AlgorithmState> {
 
 	private final T state;
 
-	private final long TTL;
+	private final Instant expiresAt;
 
-	private final long updateAt;
-
-	public StoreState(T state, long tTL, long updateAt) {
+	public StoreState(T state, Instant expiresAt) {
 		super();
 		this.state = state;
-		TTL = tTL;
-		this.updateAt = updateAt;
+		this.expiresAt = expiresAt;
 	}
 
 	public T getState() {
 		return state;
 	}
 
-	public long getTTL() {
-		return TTL;
-	}
-
-	public long getUpdateAt() {
-		return updateAt;
+	public Instant getExpiresAt() {
+		return expiresAt;
 	}
 
 }
