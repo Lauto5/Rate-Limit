@@ -1,7 +1,9 @@
 package io.github.lauto5.rateLimit.domain.algorithm;
 
+import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
+import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
+import io.github.lauto5.rateLimit.domain.model.AlgorithmExecutionResult;
 import io.github.lauto5.rateLimit.domain.policies.RateLimitPolicy;
-import io.github.lauto5.rateLimit.domain.states.AlgorithmState;
 
 public interface RateLimitAlgorithm <S extends AlgorithmState , P extends RateLimitPolicy> {
 

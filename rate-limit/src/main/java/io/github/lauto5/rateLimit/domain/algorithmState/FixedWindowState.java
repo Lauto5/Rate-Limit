@@ -1,4 +1,4 @@
-package io.github.lauto5.rateLimit.domain.states;
+package io.github.lauto5.rateLimit.domain.algorithmState;
 
 import java.time.Instant;
 

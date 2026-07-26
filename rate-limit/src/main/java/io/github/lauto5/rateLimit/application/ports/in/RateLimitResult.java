@@ -6,13 +6,13 @@ import java.util.Optional;
 
 public final class RateLimitResult {
 
-	final boolean allowed;
+	private final boolean allowed;
 	
-	final long remaining;
+	private final long remaining;
 	
-	final Optional<Duration> retryAfter;
+	private final Optional<Duration> retryAfter;
 	
-	final Instant resetAt;
+	private final Instant resetAt;
 	
 	public RateLimitResult(boolean allowed, long remaining, Duration retryAfter, Instant resetAt) {
 		this.allowed = allowed;
@@ -43,6 +43,22 @@ public final class RateLimitResult {
 	            retryAfter,
 	            resetAt
 	    );
+	}
+
+	public boolean isAllowed() {
+		return allowed;
+	}
+
+	public long getRemaining() {
+		return remaining;
+	}
+
+	public Optional<Duration> getRetryAfter() {
+		return retryAfter;
+	}
+
+	public Instant getResetAt() {
+		return resetAt;
 	}
 	
 }

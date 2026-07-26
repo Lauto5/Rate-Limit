@@ -1,4 +1,4 @@
-package io.github.lauto5.rateLimit.domain.states;
+package io.github.lauto5.rateLimit.domain.algorithmState;
 
 public class GcraState implements AlgorithmState {
 
