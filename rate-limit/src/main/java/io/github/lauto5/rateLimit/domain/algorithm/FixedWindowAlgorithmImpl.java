@@ -6,66 +6,91 @@ import java.time.Instant;
 import io.github.lauto5.rateLimit.application.ports.in.RateLimitResult;
 import io.github.lauto5.rateLimit.domain.algorithmState.FixedWindowState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
-import io.github.lauto5.rateLimit.domain.model.AlgorithmExecutionResult;
+import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
 import io.github.lauto5.rateLimit.domain.policies.FixedWindowPolicy;
 
 public class FixedWindowAlgorithmImpl implements FixedWindowAlgorithm {
 
 	@Override
-	public AlgorithmExecutionResult<FixedWindowState> execute(FixedWindowState state, FixedWindowPolicy policy,
+	public AlgorithmResult<FixedWindowState> execute(FixedWindowState state, FixedWindowPolicy policy,
 			AlgorithmContext context) {
-
-		Instant expireWindow = state.getWindowStart().plus(policy.getWindowSize());
 		
-		Instant resetAt = context.getNow().plus(policy.getWindowSize()); 
+		Instant now = context.getNow();
 		
-		Duration expireAt = Duration.between(context.getNow(), expireWindow);
+		Instant windowEnd = state.getWindowStart().plus(policy.getWindowSize());
 
-		// expiro la ventana?
+		Duration expireIn = Duration.between(now , windowEnd);
+		
 
-		if (!context.getNow().isBefore(expireWindow)) {
-
-			FixedWindowState newState = new FixedWindowState(1, context.getNow());
-
-			RateLimitResult result = RateLimitResult.allowed(policy.getLimit() - 1, resetAt);
-
-			return new AlgorithmExecutionResult<>(newState, result, policy.getWindowSize());
-
+		/*
+		 * 1 :
+		 * 
+		 * Si la ventana actual expiró, se crea una nueva ventana
+		 * comenzando en el instante actual.
+		 */
+		
+		if (isWindowExpired(now, windowEnd)) {
+			
+			FixedWindowState newState = new FixedWindowState(
+					1, 
+					now
+			);
+			
+			Instant newResetAt = now.plus(
+					policy.getWindowSize()
+			);
+			
+			long remaining = 
+					policy.getLimit() - 1;
+			
+			return AlgorithmResult.allowed(
+					newState, 
+					remaining, 
+					newResetAt, 
+					policy.getWindowSize()
+			);
+			
 		}
 		
-		// tpdavia tiene intentos?
+		/*
+		 * 2 :
+		 * 
+		 * La ventana sigue vigente.
+		 * Si todavía quedan permisos disponibles,
+		 * consumimos uno.
+		 */
 		
 		if (state.getCount() < policy.getLimit()) {
-
-		    FixedWindowState newState =
-		            new FixedWindowState(
-		                    state.getCount() + 1,
-		                    state.getWindowStart()
-		            );
-
-		    RateLimitResult result =
-		            RateLimitResult.allowed(
-		                    policy.getLimit() - newState.getCount(),
-		                    expireWindow
-		            );
-
-		    
-		    
-		    return new AlgorithmExecutionResult<>(
-		            newState,
-		            result,
-		            expireAt
-		    );
+			
+			FixedWindowState newState = new FixedWindowState(
+					state.getCount() + 1 , 
+					state.getWindowStart()
+			);
+			
+			long remaining = policy.getLimit() - newState.getCount(); 
+			
+			return AlgorithmResult.allowed(
+					newState, 
+					remaining, 
+					windowEnd, 
+					expireIn
+			);
+			
 		}
 		
-		// no fue permitido
+		/*
+		 * 3 :
+		 * 
+		 * No quedan permisos disponibles dentro
+		 * de la ventana actual.
+		 */
 		
-		RateLimitResult result =RateLimitResult.denied(
-		        expireAt,
-		        expireWindow
+		return AlgorithmResult.denied(
+		        state,
+		        expireIn,
+		        windowEnd,
+		        expireIn
 		);
-		
-		return new AlgorithmExecutionResult<>(state ,result , expireAt);
 		
 	}
 
@@ -73,5 +98,8 @@ public class FixedWindowAlgorithmImpl implements FixedWindowAlgorithm {
 	public FixedWindowState createInitialState(FixedWindowPolicy policy, AlgorithmContext context) {
 		return new FixedWindowState(0, context.getNow());
 	}
-
+	
+	private boolean isWindowExpired(Instant now , Instant windowEnd ) {
+		return !now.isBefore(windowEnd);
+	}
 }
