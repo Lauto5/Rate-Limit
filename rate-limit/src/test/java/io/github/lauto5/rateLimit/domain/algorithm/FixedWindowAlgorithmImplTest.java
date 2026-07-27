@@ -134,7 +134,7 @@ public class FixedWindowAlgorithmImplTest {
 	}
 
 	@Nested
-	class BorderCases {
+	class BoundaryCases {
 
 		@Test
 		void windowShouldNotExpireBeforeBoundary() {
