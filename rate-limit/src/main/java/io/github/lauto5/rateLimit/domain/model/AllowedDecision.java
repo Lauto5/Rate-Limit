@@ -5,6 +5,11 @@ public final class AllowedDecision implements AlgorithmDecision {
     private final int remaining;
 
     public AllowedDecision(int remaining) {
+    	
+    	if(remaining < 0) {
+    		throw new IllegalArgumentException("remaining must be greater than 0");
+    	}
+    	
         this.remaining = remaining;
     }
 
