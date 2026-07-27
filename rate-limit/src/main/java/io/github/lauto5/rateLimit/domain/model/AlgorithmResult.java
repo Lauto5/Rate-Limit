@@ -69,4 +69,8 @@ public final class AlgorithmResult <S extends AlgorithmState>{
 		return expireIn;
 	}
 	
+	public boolean isAllowed() {
+		return this.decision.isAllowed();
+	}
+	
 }

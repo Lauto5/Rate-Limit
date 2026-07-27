@@ -1,12 +1,16 @@
 package io.github.lauto5.rateLimit.domain.algorithm;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.github.lauto5.rateLimit.domain.algorithmState.FixedWindowState;
@@ -17,7 +21,45 @@ import io.github.lauto5.rateLimit.domain.model.DeniedDecision;
 import io.github.lauto5.rateLimit.domain.policies.FixedWindowPolicy;
 
 public class FixedWindowAlgorithmImplTest {
+	
+    private FixedWindowAlgorithm algorithm;
+    private FixedWindowPolicy defaultPolicy;
+    private Instant fixedNow;
 
+    @BeforeEach
+    void setUp() {
+        algorithm = new FixedWindowAlgorithmImpl();
+        defaultPolicy = new FixedWindowPolicy(5, Duration.ofMinutes(1));
+        fixedNow = Instant.parse("2026-01-01T10:00:00Z");
+    }
+    
+    // HELPER
+    
+    private AlgorithmContext contextAt(Instant instant) {
+        return new AlgorithmContext(instant);
+    }
+
+    private FixedWindowState stateWith(int count, Instant windowStart) {
+        return new FixedWindowState(count, windowStart);
+    }
+
+    private FixedWindowPolicy policyWith(int limit, Duration duration) {
+        return new FixedWindowPolicy(limit, duration);
+    }
+
+    private AllowedDecision extractAllowed(AlgorithmResult<FixedWindowState> result) {
+        assertTrue(result.isAllowed(), "Expected decision to be ALLOWED");
+        return assertInstanceOf(AllowedDecision.class, result.getDecision());
+    }
+
+    private DeniedDecision extractDenied(AlgorithmResult<FixedWindowState> result) {
+        assertFalse(result.isAllowed(), "Expected decision to be DENIED");
+        return assertInstanceOf(DeniedDecision.class, result.getDecision());
+    }
+    
+    // =========================================================================
+    
+    
 	@Test
 	void firstRequestShouldBeAllowed() {
 
@@ -39,7 +81,7 @@ public class FixedWindowAlgorithmImplTest {
 
 		// Assert
 
-		assertTrue(result.getDecision().isAllowed());
+		assertTrue(result.isAllowed());
 
 		assertEquals(1, result.getState().getCount());
 
@@ -60,13 +102,13 @@ public class FixedWindowAlgorithmImplTest {
 
 		Duration expireIn = Duration.ofMinutes(1);
 
-		FixedWindowPolicy policy = new FixedWindowPolicy(1, expireIn);
+		FixedWindowPolicy policy = new FixedWindowPolicy(5, expireIn);
 
 		Instant now = Instant.parse("2026-01-01T10:00:00Z");
 
 		AlgorithmContext context = new AlgorithmContext(now);
 
-		FixedWindowState state = new FixedWindowState(1, now);
+		FixedWindowState state = new FixedWindowState(5, now);
 
 		// Act
 
@@ -74,9 +116,9 @@ public class FixedWindowAlgorithmImplTest {
 
 		// Assert
 
-		assertTrue(!result.getDecision().isAllowed());
+		assertFalse(result.isAllowed());
 
-		assertEquals(1, result.getState().getCount());
+		assertEquals(5, result.getState().getCount());
 
 		DeniedDecision decision = (DeniedDecision) result.getDecision();
 
@@ -94,6 +136,108 @@ public class FixedWindowAlgorithmImplTest {
 
 	@Test
 	void expiredWindowShouldCreateNewState() {
+		
+		// Arrange
+
+		FixedWindowAlgorithm algorithm = new FixedWindowAlgorithmImpl();
+
+		FixedWindowPolicy policy = new FixedWindowPolicy(5, Duration.ofMinutes(1));
+
+		Instant now = Instant.parse("2026-01-01T10:00:00Z");
+
+		AlgorithmContext context = new AlgorithmContext(now);
+
+		FixedWindowState state = new FixedWindowState(0, now);
+		
+		// Act
+
+		AlgorithmResult<FixedWindowState> result = algorithm.execute(state, policy, context);
+
+		AllowedDecision decision = (AllowedDecision) result.getDecision();
+		
+		// Assert
+
+		assertTrue(result.isAllowed());
+
+		assertEquals(1, result.getState().getCount());
+
+		assertEquals(now, result.getState().getWindowStart());
+		
+		assertEquals(policy.getLimit() - 1 , decision.getRemaining());
+
+		assertNotSame(state, result.getState());
+
+		
+	}
+	
+	@Test
+	void windowShouldExpireExactlyAtBoundary() {
+		
+		// Arrange
+
+		FixedWindowAlgorithm algorithm = new FixedWindowAlgorithmImpl();
+
+		FixedWindowPolicy policy = new FixedWindowPolicy(5, Duration.ofMinutes(1));
+
+		Instant now = Instant.parse("2026-01-01T10:00:00Z");
+
+		AlgorithmContext context = new AlgorithmContext(now.plus(Duration.ofMinutes(1)));
+
+		FixedWindowState state = new FixedWindowState(0, now);
+		
+		// Act
+
+		AlgorithmResult<FixedWindowState> result = algorithm.execute(state, policy, context);
+
+		AllowedDecision decision = (AllowedDecision) result.getDecision();
+
+		// Assert
+
+		assertTrue(result.isAllowed());
+
+		assertEquals(1, result.getState().getCount());
+
+		assertEquals(now.plus(Duration.ofMinutes(1)), result.getState().getWindowStart());
+		
+		assertEquals(policy.getLimit() - 1 , decision.getRemaining());
+
+		assertNotSame(state, result.getState());
+		
+	}
+	
+	@Test
+	void windowShouldNotExpireBeforeBoundary() {
+		
+		// Arrange
+
+		FixedWindowAlgorithm algorithm = new FixedWindowAlgorithmImpl();
+
+		FixedWindowPolicy policy = new FixedWindowPolicy(5, Duration.ofMinutes(1));
+
+		Instant now = Instant.parse("2026-01-01T10:00:00Z");
+
+		AlgorithmContext context = new AlgorithmContext(now.plus(Duration.ofSeconds(59)));
+
+		FixedWindowState state = new FixedWindowState(0, now);
+		
+		// Act
+
+		AlgorithmResult<FixedWindowState> result = algorithm.execute(state, policy, context);
+
+		AllowedDecision decision = (AllowedDecision) result.getDecision();
+
+		// Assert
+
+		assertTrue(result.isAllowed());
+
+		assertEquals(1, result.getState().getCount());
+
+		assertEquals(now, result.getState().getWindowStart());
+		
+		assertEquals(policy.getLimit() - 1 , decision.getRemaining());
+
+		assertNotSame(state, result.getState());
+		
 	}
 
 }
