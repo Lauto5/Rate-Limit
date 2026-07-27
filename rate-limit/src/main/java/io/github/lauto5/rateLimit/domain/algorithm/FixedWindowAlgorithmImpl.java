@@ -40,7 +40,7 @@ public class FixedWindowAlgorithmImpl implements FixedWindowAlgorithm {
 					policy.getWindowSize()
 			);
 			
-			long remaining = 
+			int remaining = 
 					policy.getLimit() - 1;
 			
 			return AlgorithmResult.allowed(
@@ -67,7 +67,7 @@ public class FixedWindowAlgorithmImpl implements FixedWindowAlgorithm {
 					state.getWindowStart()
 			);
 			
-			long remaining = policy.getLimit() - newState.getCount(); 
+			int remaining = policy.getLimit() - newState.getCount(); 
 			
 			return AlgorithmResult.allowed(
 					newState, 

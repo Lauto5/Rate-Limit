@@ -26,7 +26,7 @@ public final class AlgorithmResult <S extends AlgorithmState>{
 	
 	public static <S extends AlgorithmState> AlgorithmResult<S> allowed(
 	        S state,
-	        long remaining,
+	        int remaining,
 	        Instant resetAt,
 	        Duration expiresIn) {
 

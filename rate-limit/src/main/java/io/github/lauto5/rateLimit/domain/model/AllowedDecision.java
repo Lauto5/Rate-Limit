@@ -2,9 +2,9 @@ package io.github.lauto5.rateLimit.domain.model;
 
 public final class AllowedDecision implements AlgorithmDecision {
 
-    private final long remaining;
+    private final int remaining;
 
-    public AllowedDecision(long remaining) {
+    public AllowedDecision(int remaining) {
         this.remaining = remaining;
     }
 
