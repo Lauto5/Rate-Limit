@@ -9,7 +9,19 @@ public class FixedWindowState implements AlgorithmState {
 	private final Instant windowStart;
 
 	public FixedWindowState(int count, Instant windowStart) {
+		
 		super();
+		
+        if (count < 0) {
+            throw new IllegalArgumentException(
+                "Count cannot be negative, got: " + count
+            );
+        }
+        
+        if (windowStart == null) {
+            throw new IllegalArgumentException("WindowStart cannot be null");
+        }
+		
 		this.count = count;
 		this.windowStart = windowStart;
 	}
