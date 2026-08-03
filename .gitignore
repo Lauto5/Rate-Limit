@@ -44,3 +44,6 @@ Desktop.ini
 *~
 .directory
 /.metadata/
+/bin/
+bin/
+target/

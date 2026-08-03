@@ -5,6 +5,6 @@ import io.github.lauto5.rateLimit.domain.policies.RateLimitPolicy;
 
 public interface RateLimitStore {
 
-	public <S extends AlgorithmState, P extends RateLimitPolicy , R> R executeAtomically(String identifier, P policy , AtomicOperation<S , R> operation);
+	public <S extends AlgorithmState> AtomicOperationResult<S> executeAtomically(String identifier , AtomicOperation<S> operation);
 	
 }
