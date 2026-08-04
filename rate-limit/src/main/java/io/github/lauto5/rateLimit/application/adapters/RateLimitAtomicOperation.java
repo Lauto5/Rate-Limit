@@ -26,30 +26,44 @@ public final class RateLimitAtomicOperation<S extends AlgorithmState, P extends 
 	}
 
 	@Override
-	public AtomicOperationResult<S> apply(StoreState<S> currentState) {
+	public AtomicOperationResult<S> apply(StoreState<S> currentStoreState) {
 
-		// 1 - Si no existe estado persistido, crear el estado inicial
+		/*
+		 * 1. 
+		 * If the current store state does not exist, then create a new one.
+		 * 
+		 */
+		
 		S state;
 
-		if (currentState == null) {
+		if (currentStoreState == null) {
 			state = algorithm.createInitialState(policy, context);
 		} else {
-			state = currentState.getState();
+			state = currentStoreState.getState();
 		}
 
-		// 2 - Ejecutar el algoritmo
+		/*
+		 * 2.
+		 * Run the algorithm
+		 * 
+		 */
+		
 		AlgorithmResult<S> algorithmResult = algorithm.execute(state, policy, context);
 
-		// 3 - Calcular la fecha de expiración del estado
+		/*
+		 * 3.
+		 * Calculate the expireAt to create the atomic operation
+		 * 
+		 */
+		
 		Instant expiresAt = context.getNow().plus(algorithmResult.getExpireIn());
 
-		// 4 - Construir el resultado que utilizará el Store
 		return new AtomicOperationResult<>(expiresAt , algorithmResult);
 	}
 
 	@Override
-	public AlgorithmContext getContext() {
-		return this.context;
+	public Instant getNow() {
+		return this.context.getNow();
 	}
 
 }

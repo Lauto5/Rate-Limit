@@ -1,7 +1,6 @@
 package io.github.lauto5.rateLimit.application.ports.out;
 
 import java.time.Instant;
-
 import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
 
 public final class StoreState<T extends AlgorithmState> {
