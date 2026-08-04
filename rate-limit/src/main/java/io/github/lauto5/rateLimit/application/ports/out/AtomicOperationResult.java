@@ -28,4 +28,8 @@ public final class AtomicOperationResult<S extends AlgorithmState> {
     public S getState() {
     	return this.algorithmResult.getState();
     }
+    
+    public StoreState<S> getStoreState(){
+    	return new StoreState<>(this.getState(), this.getExpiresAt()); 
+    }
 }

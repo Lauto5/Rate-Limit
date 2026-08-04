@@ -23,5 +23,9 @@ public final class StoreState<T extends AlgorithmState> {
 	public Instant getExpiresAt() {
 		return expiresAt;
 	}
+	
+	public boolean isExpired(Instant now) {
+	    return !now.isBefore(expiresAt);
+	}
 
 }
