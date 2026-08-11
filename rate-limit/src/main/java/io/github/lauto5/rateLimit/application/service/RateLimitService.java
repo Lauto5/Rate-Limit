@@ -9,6 +9,7 @@ import io.github.lauto5.rateLimit.application.ports.out.RateLimitStore;
 import io.github.lauto5.rateLimit.domain.algorithm.RateLimitAlgorithm;
 import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
+import io.github.lauto5.rateLimit.domain.mapper.RateLimitResultMapper;
 import io.github.lauto5.rateLimit.domain.policies.RateLimitPolicy;
 
 public final class RateLimitService<S extends AlgorithmState , P extends RateLimitPolicy>{
@@ -38,8 +39,6 @@ public final class RateLimitService<S extends AlgorithmState , P extends RateLim
         AtomicOperationResult<S> result =
                 store.executeAtomically(identifier, operation);
 
-        // transformar result -> RateLimitResult
-
-        return null;
+        return RateLimitResultMapper.fromAtomicOperationResult(result);
     }
 }
