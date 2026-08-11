@@ -1,4 +1,4 @@
-package io.github.lauto5.rateLimit.domain.mapper;
+package io.github.lauto5.rateLimit.application.mapper;
 
 import java.time.Instant;
 
@@ -13,7 +13,6 @@ import io.github.lauto5.rateLimit.domain.model.DeniedDecision;
 public class RateLimitResultMapper {
 
     private RateLimitResultMapper() {
-        // Constructor privado para clase de utilidad
     }
 
     public static <S extends AlgorithmState> RateLimitResult fromAtomicOperationResult(
