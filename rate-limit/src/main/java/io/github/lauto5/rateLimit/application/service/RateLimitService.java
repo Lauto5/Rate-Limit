@@ -1,5 +1,6 @@
 package io.github.lauto5.rateLimit.application.service;
 
+import java.time.Clock;
 import java.time.Instant;
 
 import io.github.lauto5.rateLimit.application.adapters.RateLimitAtomicOperation;
@@ -16,23 +17,21 @@ public final class RateLimitService<S extends AlgorithmState , P extends RateLim
 
     private final RateLimitStore store;
     private final RateLimitAlgorithm<S, P> algorithm;
-    
-    
+    private final Clock clock;
 
-    public RateLimitService(RateLimitStore store, RateLimitAlgorithm<S, P> algorithm) {
+	public RateLimitService(RateLimitStore store, RateLimitAlgorithm<S, P> algorithm, Clock clock) {
 		super();
 		this.store = store;
 		this.algorithm = algorithm;
+		this.clock = clock;
 	}
-
-
 
 	public RateLimitResult use(
             String identifier,
             P policy) {
 
-        AlgorithmContext context =
-                new AlgorithmContext(Instant.now());
+	    AlgorithmContext context =
+	            new AlgorithmContext(Instant.now(clock));
 
         RateLimitAtomicOperation<S, P> operation =new RateLimitAtomicOperation<S,P>(algorithm,policy,context);
 
