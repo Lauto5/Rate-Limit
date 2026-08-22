@@ -172,7 +172,7 @@ class RateLimitServiceTest {
 
             // Act
 
-            service.use(
+            service.execute(
                     identifier,
                     standardPolicy
             );
@@ -199,7 +199,7 @@ class RateLimitServiceTest {
 
             // Act
 
-            service.use(
+            service.execute(
                     identifier,
                     standardPolicy
             );
@@ -227,7 +227,7 @@ class RateLimitServiceTest {
 
             // Act
 
-            service.use(
+            service.execute(
                     identifier,
                     standardPolicy
             );
@@ -259,7 +259,7 @@ class RateLimitServiceTest {
             // Act
 
             RateLimitResult result =
-                    service.use(
+                    service.execute(
                             identifier,
                             standardPolicy
                     );
@@ -314,7 +314,7 @@ class RateLimitServiceTest {
         // Act
 
         RateLimitResult result =
-                service.use(
+                service.execute(
                         "user-1",
                         standardPolicy
                 );
@@ -379,7 +379,7 @@ class RateLimitServiceTest {
         // Act
 
         RateLimitResult result =
-                service.use(
+                service.execute(
                         "user-1",
                         standardPolicy
                 );

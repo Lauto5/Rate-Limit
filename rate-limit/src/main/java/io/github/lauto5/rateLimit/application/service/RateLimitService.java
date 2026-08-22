@@ -3,6 +3,7 @@ package io.github.lauto5.rateLimit.application.service;
 import java.time.Clock;
 import java.time.Instant;
 
+import io.github.lauto5.rateLimit.application.RateLimitExecutor;
 import io.github.lauto5.rateLimit.application.adapters.RateLimitAtomicOperation;
 import io.github.lauto5.rateLimit.application.mapper.RateLimitResultMapper;
 import io.github.lauto5.rateLimit.application.ports.in.RateLimitResult;
@@ -13,7 +14,7 @@ import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.policies.RateLimitPolicy;
 
-public final class RateLimitService<S extends AlgorithmState , P extends RateLimitPolicy>{
+public final class RateLimitService<S extends AlgorithmState , P extends RateLimitPolicy> implements RateLimitExecutor<P>{
 
     private final RateLimitStore store;
     private final RateLimitAlgorithm<S, P> algorithm;
@@ -26,10 +27,8 @@ public final class RateLimitService<S extends AlgorithmState , P extends RateLim
 		this.clock = clock;
 	}
 
-	public RateLimitResult use(
-            String identifier,
-            P policy) {
-
+	@Override
+	public RateLimitResult execute(String identifier, P policy) {
 	    AlgorithmContext context =
 	            new AlgorithmContext(Instant.now(clock));
 
@@ -39,5 +38,5 @@ public final class RateLimitService<S extends AlgorithmState , P extends RateLim
                 store.executeAtomically(identifier, operation);
 
         return RateLimitResultMapper.fromAtomicOperationResult(result);
-    }
+	}
 }

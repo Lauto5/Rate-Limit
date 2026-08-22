@@ -15,9 +15,7 @@ import org.junit.jupiter.api.Test;
 import io.github.lauto5.rateLimit.api.Algorithm;
 import io.github.lauto5.rateLimit.api.Persistence;
 import io.github.lauto5.rateLimit.application.ports.in.RateLimitResult;
-import io.github.lauto5.rateLimit.domain.algorithmState.FixedWindowState;
 import io.github.lauto5.rateLimit.domain.policies.FixedWindowPolicy;
-import io.github.lauto5.rateLimit.domain.policies.RateLimitPolicy;
 
 class RateLimitTest {
 
@@ -31,7 +29,7 @@ class RateLimitTest {
 
     private Clock fixedClock;
 
-    private RateLimit<FixedWindowState , FixedWindowPolicy> rateLimit;
+    private RateLimit<FixedWindowPolicy> rateLimit;
 
     @BeforeEach
     void setUp() {
@@ -48,20 +46,38 @@ class RateLimitTest {
         );
     }
 
+    // ============================================================
+    // Basic behavior
+    // ============================================================
+
     @Test
     void firstRequestShouldBeAllowed() {
 
         // Arrange
+
         FixedWindowPolicy policy =
-                new FixedWindowPolicy(LIMIT, WINDOW);
+                new FixedWindowPolicy(
+                        LIMIT,
+                        WINDOW
+                );
 
         // Act
+
         RateLimitResult result =
-                rateLimit.use("user-1", policy);
+                rateLimit.use(
+                        "user-1",
+                        policy
+                );
 
         // Assert
+
         assertTrue(result.isAllowed());
-        assertEquals(2, result.getRemaining());
+
+        assertEquals(
+                2,
+                result.getRemaining()
+        );
+
         assertEquals(
                 FIXED_NOW.plus(WINDOW),
                 result.getResetAt()
@@ -69,30 +85,51 @@ class RateLimitTest {
     }
 
     @Test
-    void requestAfterLimitShouldBeDenied() {
+    void requestShouldBeDeniedAfterLimitIsReached() {
 
         // Arrange
-    	FixedWindowPolicy policy =
-                new FixedWindowPolicy(LIMIT, WINDOW);
+
+        FixedWindowPolicy policy =
+                new FixedWindowPolicy(
+                        LIMIT,
+                        WINDOW
+                );
 
         // Act
-        rateLimit.use("user-1", policy);
-        rateLimit.use("user-1", policy);
 
-        RateLimitResult result =
+        RateLimitResult first =
+                rateLimit.use("user-1", policy);
+
+        RateLimitResult second =
+                rateLimit.use("user-1", policy);
+
+        RateLimitResult third =
+                rateLimit.use("user-1", policy);
+
+        RateLimitResult fourth =
                 rateLimit.use("user-1", policy);
 
         // Assert
-        assertTrue(result.isAllowed());
-        assertEquals(0, result.getRemaining());
 
-        RateLimitResult denied =
-                rateLimit.use("user-1", policy);
+        assertTrue(first.isAllowed());
+        assertEquals(2, first.getRemaining());
 
-        assertFalse(denied.isAllowed());
+        assertTrue(second.isAllowed());
+        assertEquals(1, second.getRemaining());
+
+        assertTrue(third.isAllowed());
+        assertEquals(0, third.getRemaining());
+
+        assertFalse(fourth.isAllowed());
+
         assertEquals(
                 Duration.ofMinutes(1),
-                denied.getRetryAfter().get()
+                fourth.getRetryAfter().get()
+        );
+
+        assertEquals(
+                FIXED_NOW.plus(WINDOW),
+                fourth.getResetAt()
         );
     }
 
@@ -100,28 +137,67 @@ class RateLimitTest {
     void differentIdentifiersShouldHaveIndependentLimits() {
 
         // Arrange
+
         FixedWindowPolicy policy =
-                new FixedWindowPolicy(LIMIT, WINDOW);
+                new FixedWindowPolicy(
+                        LIMIT,
+                        WINDOW
+                );
 
         // Act
+
         RateLimitResult user1 =
-                rateLimit.use("user-1", policy);
+                rateLimit.use(
+                        "user-1",
+                        policy
+                );
 
         RateLimitResult user2 =
-                rateLimit.use("user-2", policy);
+                rateLimit.use(
+                        "user-2",
+                        policy
+                );
 
         // Assert
-        assertTrue(user1.isAllowed());
-        assertTrue(user2.isAllowed());
 
+        assertTrue(user1.isAllowed());
         assertEquals(2, user1.getRemaining());
+
+        assertTrue(user2.isAllowed());
         assertEquals(2, user2.getRemaining());
     }
 
-    @Test
-    void requestAfterWindowShouldBeAllowedAgain() {
+    // ============================================================
+    // API contract
+    // ============================================================
 
-        // Este test requiere que el Clock pueda avanzar.
-        // Con Clock.fixed() no podemos modificar el tiempo.
+    @Test
+    void shouldExposeOnlyPolicyTypeThroughPublicApi() {
+
+        // Este test es principalmente de compilación.
+        //
+        // Si esto compila, la API pública está correctamente
+        // encapsulada respecto de AlgorithmState.
+
+        RateLimit<FixedWindowPolicy> rateLimit =
+                RateLimit.build(
+                        Algorithm.fixedWindow(),
+                        Persistence.inMemory(),
+                        fixedClock
+                );
+
+        FixedWindowPolicy policy =
+                new FixedWindowPolicy(
+                        LIMIT,
+                        WINDOW
+                );
+
+        RateLimitResult result =
+                rateLimit.use(
+                        "user-1",
+                        policy
+                );
+
+        assertTrue(result.isAllowed());
     }
 }
