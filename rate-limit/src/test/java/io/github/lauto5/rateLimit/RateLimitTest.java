@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import io.github.lauto5.rateLimit.api.Algorithm;
 import io.github.lauto5.rateLimit.api.Persistence;
-import io.github.lauto5.rateLimit.application.ports.in.RateLimitResult;
+import io.github.lauto5.rateLimit.api.RateLimitResult;
 import io.github.lauto5.rateLimit.domain.policies.FixedWindowPolicy;
 
 class RateLimitTest {

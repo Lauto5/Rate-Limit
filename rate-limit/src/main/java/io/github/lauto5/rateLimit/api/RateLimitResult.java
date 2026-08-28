@@ -1,4 +1,4 @@
-package io.github.lauto5.rateLimit.application.ports.in;
+package io.github.lauto5.rateLimit.api;
 
 import java.time.Duration;
 import java.time.Instant;

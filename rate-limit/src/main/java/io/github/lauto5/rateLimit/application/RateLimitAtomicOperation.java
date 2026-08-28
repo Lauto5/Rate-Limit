@@ -1,4 +1,4 @@
-package io.github.lauto5.rateLimit.application.adapters;
+package io.github.lauto5.rateLimit.application;
 
 import java.time.Instant;
 

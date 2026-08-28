@@ -1,4 +1,4 @@
-package io.github.lauto5.rateLimit.application.service;
+package io.github.lauto5.rateLimit.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -14,7 +14,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import io.github.lauto5.rateLimit.application.ports.in.RateLimitResult;
+import io.github.lauto5.rateLimit.api.RateLimitResult;
+import io.github.lauto5.rateLimit.application.RateLimitService;
 import io.github.lauto5.rateLimit.application.ports.out.AtomicOperation;
 import io.github.lauto5.rateLimit.application.ports.out.AtomicOperationResult;
 import io.github.lauto5.rateLimit.domain.algorithmState.FixedWindowState;

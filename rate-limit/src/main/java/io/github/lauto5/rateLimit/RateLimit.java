@@ -2,10 +2,10 @@ package io.github.lauto5.rateLimit;
 
 import java.time.Clock;
 
+import io.github.lauto5.rateLimit.api.RateLimitResult;
 import io.github.lauto5.rateLimit.application.RateLimitExecutor;
-import io.github.lauto5.rateLimit.application.ports.in.RateLimitResult;
+import io.github.lauto5.rateLimit.application.RateLimitService;
 import io.github.lauto5.rateLimit.application.ports.out.RateLimitStore;
-import io.github.lauto5.rateLimit.application.service.RateLimitService;
 import io.github.lauto5.rateLimit.domain.algorithm.RateLimitAlgorithm;
 import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
 import io.github.lauto5.rateLimit.domain.policies.RateLimitPolicy;

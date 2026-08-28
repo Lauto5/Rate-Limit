@@ -1,12 +1,9 @@
-package io.github.lauto5.rateLimit.application.service;
+package io.github.lauto5.rateLimit.application;
 
 import java.time.Clock;
 import java.time.Instant;
 
-import io.github.lauto5.rateLimit.application.RateLimitExecutor;
-import io.github.lauto5.rateLimit.application.adapters.RateLimitAtomicOperation;
-import io.github.lauto5.rateLimit.application.mapper.RateLimitResultMapper;
-import io.github.lauto5.rateLimit.application.ports.in.RateLimitResult;
+import io.github.lauto5.rateLimit.api.RateLimitResult;
 import io.github.lauto5.rateLimit.application.ports.out.AtomicOperationResult;
 import io.github.lauto5.rateLimit.application.ports.out.RateLimitStore;
 import io.github.lauto5.rateLimit.domain.algorithm.RateLimitAlgorithm;

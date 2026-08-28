@@ -1,4 +1,4 @@
-package io.github.lauto5.rateLimit.application.adapters;
+package io.github.lauto5.rateLimit.application;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -8,6 +8,7 @@ import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.github.lauto5.rateLimit.application.RateLimitAtomicOperation;
 import io.github.lauto5.rateLimit.application.ports.out.AtomicOperationResult;
 import io.github.lauto5.rateLimit.application.ports.out.StoreState;
 import io.github.lauto5.rateLimit.domain.algorithm.RateLimitAlgorithm;
