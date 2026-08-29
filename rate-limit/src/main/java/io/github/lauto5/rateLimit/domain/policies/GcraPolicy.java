@@ -2,7 +2,7 @@ package io.github.lauto5.rateLimit.domain.policies;
 
 import java.time.Duration;
 
-public class GcraPolicy implements RateLimitPolicy {
+public final class GcraPolicy implements RateLimitPolicy {
 
 	private final double rate; // average permitted rate
 	private final Duration burst; // maximum permitted burst (in time)

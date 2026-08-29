@@ -1,6 +1,6 @@
 package io.github.lauto5.rateLimit.domain.policies;
 
-public class LeakyBucketPolicy implements RateLimitPolicy {
+public final class LeakyBucketPolicy implements RateLimitPolicy {
 
 	private final double capacity;
 	private final double leakRate; // requests processed per unit of time

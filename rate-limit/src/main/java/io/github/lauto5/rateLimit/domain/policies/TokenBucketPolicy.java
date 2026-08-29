@@ -1,6 +1,6 @@
 package io.github.lauto5.rateLimit.domain.policies;
 
-public class TokenBucketPolicy implements RateLimitPolicy {
+public final class TokenBucketPolicy implements RateLimitPolicy {
 
 	private final double capacity;
 	private final double refillRate; // Tokens per unit of time

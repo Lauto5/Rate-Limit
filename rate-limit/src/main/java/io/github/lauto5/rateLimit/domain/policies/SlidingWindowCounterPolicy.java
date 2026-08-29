@@ -2,7 +2,7 @@ package io.github.lauto5.rateLimit.domain.policies;
 
 import java.time.Duration;
 
-public class SlidingWindowCounterPolicy implements RateLimitPolicy {
+public final class SlidingWindowCounterPolicy implements RateLimitPolicy {
 
 	private final int limit;
 	private final Duration windowSize;

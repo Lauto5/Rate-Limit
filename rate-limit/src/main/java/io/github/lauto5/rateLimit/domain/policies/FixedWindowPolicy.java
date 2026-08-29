@@ -2,7 +2,7 @@ package io.github.lauto5.rateLimit.domain.policies;
 
 import java.time.Duration;
 
-public class FixedWindowPolicy implements RateLimitPolicy {
+public final class FixedWindowPolicy implements RateLimitPolicy {
 
 	private final int limit;
 	
