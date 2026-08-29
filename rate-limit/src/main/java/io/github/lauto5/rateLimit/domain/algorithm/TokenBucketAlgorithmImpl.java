@@ -18,8 +18,6 @@ public class TokenBucketAlgorithmImpl implements TokenBucketAlgorithm {
 
 		Instant now = context.getNow();
 
-		double nowSeconds = toSeconds(now);
-
 		/*
 		 * 1 :
 		 *
@@ -28,7 +26,9 @@ public class TokenBucketAlgorithmImpl implements TokenBucketAlgorithm {
 		 * y a la tasa de recarga de la política.
 		 */
 
-		double elapsedSeconds = nowSeconds - state.getLastRefill();
+		Duration elapsed = Duration.between(state.getLastRefill(), now);
+
+		double elapsedSeconds = elapsed.toNanos() / 1_000_000_000.0;
 
 		double refilledTokens = elapsedSeconds * policy.getRefillRate();
 
@@ -50,7 +50,7 @@ public class TokenBucketAlgorithmImpl implements TokenBucketAlgorithm {
 
 			TokenBucketState newState = new TokenBucketState(
 					remainingTokens,
-					nowSeconds
+					now
 			);
 
 			int remaining = (int) remainingTokens;
@@ -78,7 +78,7 @@ public class TokenBucketAlgorithmImpl implements TokenBucketAlgorithm {
 
 		TokenBucketState deniedState = new TokenBucketState(
 				availableTokens,
-				nowSeconds
+				now
 		);
 
 		Duration expireIn = timeUntilNextToken(availableTokens, policy);
@@ -98,12 +98,8 @@ public class TokenBucketAlgorithmImpl implements TokenBucketAlgorithm {
 	public TokenBucketState createInitialState(TokenBucketPolicy policy, AlgorithmContext context) {
 		return new TokenBucketState(
 				policy.getCapacity(),
-				toSeconds(context.getNow())
+				context.getNow()
 		);
-	}
-
-	private double toSeconds(Instant instant) {
-		return instant.toEpochMilli() / 1000.0;
 	}
 
 	private Duration timeUntilNextToken(double availableTokens, TokenBucketPolicy policy) {
@@ -112,7 +108,7 @@ public class TokenBucketAlgorithmImpl implements TokenBucketAlgorithm {
 
 		double secondsUntilNextToken = missingTokens / policy.getRefillRate();
 
-		return Duration.ofMillis((long) (secondsUntilNextToken * 1000));
+		return Duration.ofNanos((long) (secondsUntilNextToken * 1_000_000_000));
 	}
 
 	private Duration timeUntilFull(double currentTokens, TokenBucketPolicy policy) {
@@ -125,6 +121,6 @@ public class TokenBucketAlgorithmImpl implements TokenBucketAlgorithm {
 
 		double secondsUntilFull = missingTokens / policy.getRefillRate();
 
-		return Duration.ofMillis((long) (secondsUntilFull * 1000));
+		return Duration.ofNanos((long) (secondsUntilFull * 1_000_000_000));
 	}
 }
