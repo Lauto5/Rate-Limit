@@ -17,7 +17,7 @@ public class Algorithm {
 		return new TokenBucketAlgorithmImpl();
 	}
 	
-	public SlidingWindowCounterAlgorithm slidingWindowCounter()
+	public static SlidingWindowCounterAlgorithm slidingWindowCounter()
 	{
 		return new SlidingWindowCounterAlgorithmImpl();
 	}
