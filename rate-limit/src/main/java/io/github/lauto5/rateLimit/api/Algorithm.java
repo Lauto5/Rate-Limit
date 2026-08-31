@@ -2,6 +2,8 @@ package io.github.lauto5.rateLimit.api;
 
 import io.github.lauto5.rateLimit.domain.algorithm.FixedWindowAlgorithm;
 import io.github.lauto5.rateLimit.domain.algorithm.FixedWindowAlgorithmImpl;
+import io.github.lauto5.rateLimit.domain.algorithm.GcraAlgorithm;
+import io.github.lauto5.rateLimit.domain.algorithm.GcraAlgorithmImpl;
 import io.github.lauto5.rateLimit.domain.algorithm.LeakyBucketAlgorithm;
 import io.github.lauto5.rateLimit.domain.algorithm.LeakyBucketAlgorithmImpl;
 import io.github.lauto5.rateLimit.domain.algorithm.SlidingWindowCounterAlgorithm;
@@ -34,6 +36,11 @@ public class Algorithm {
 	public static LeakyBucketAlgorithm leakyBucket()
 	{
 		return new LeakyBucketAlgorithmImpl();
+	}
+	
+	public static GcraAlgorithm gcra()
+	{
+		return new GcraAlgorithmImpl();
 	}
 	
 }
