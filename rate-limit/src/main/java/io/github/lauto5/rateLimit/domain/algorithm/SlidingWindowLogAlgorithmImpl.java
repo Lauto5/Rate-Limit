@@ -1,10 +1,13 @@
 package io.github.lauto5.rateLimit.domain.algorithm;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
 import io.github.lauto5.rateLimit.domain.algorithmState.SlidingWindowLogState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
@@ -12,6 +15,41 @@ import io.github.lauto5.rateLimit.domain.policies.SlidingWindowLogPolicy;
 
 public class SlidingWindowLogAlgorithmImpl implements SlidingWindowLogAlgorithm {
 
+	private static final StateCodec<SlidingWindowLogState> CODEC = new StateCodec<SlidingWindowLogState>() {
+
+		@Override
+		public byte[] encode(SlidingWindowLogState state) {
+
+			String raw = state.getTimestamps().stream()
+					.map(String::valueOf)
+					.collect(Collectors.joining(","));
+
+			return raw.getBytes(StandardCharsets.UTF_8);
+		}
+
+		@Override
+		public SlidingWindowLogState decode(byte[] data) {
+
+			String raw = new String(data, StandardCharsets.UTF_8);
+
+			List<Long> timestamps = new ArrayList<>();
+
+			if (!raw.isEmpty()) {
+				for (String part : raw.split(",")) {
+					timestamps.add(Long.parseLong(part));
+				}
+			}
+
+			return new SlidingWindowLogState(timestamps);
+		}
+
+	};
+
+	@Override
+	public StateCodec<SlidingWindowLogState> getCodec() {
+		return CODEC;
+	}
+	
 	@Override
 	public AlgorithmResult<SlidingWindowLogState> execute(SlidingWindowLogState state, SlidingWindowLogPolicy policy,
 			AlgorithmContext context) {

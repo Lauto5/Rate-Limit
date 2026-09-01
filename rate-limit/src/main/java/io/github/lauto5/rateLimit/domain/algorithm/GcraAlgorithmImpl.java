@@ -1,8 +1,10 @@
 package io.github.lauto5.rateLimit.domain.algorithm;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 
+import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
 import io.github.lauto5.rateLimit.domain.algorithmState.GcraState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
@@ -10,6 +12,28 @@ import io.github.lauto5.rateLimit.domain.policies.GcraPolicy;
 
 public final class GcraAlgorithmImpl implements GcraAlgorithm {
 
+	private static final StateCodec<GcraState> CODEC = new StateCodec<GcraState>() {
+
+		@Override
+		public byte[] encode(GcraState state) {
+			return String.valueOf(state.getTat()).getBytes(StandardCharsets.UTF_8);
+		}
+
+		@Override
+		public GcraState decode(byte[] data) {
+
+			long tat = Long.parseLong(new String(data, StandardCharsets.UTF_8));
+
+			return new GcraState(tat);
+		}
+
+	};
+
+	@Override
+	public StateCodec<GcraState> getCodec() {
+		return CODEC;
+	}
+	
     @Override
     public AlgorithmResult<GcraState> execute(
             GcraState state,

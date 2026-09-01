@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
 import io.github.lauto5.rateLimit.domain.algorithmState.SlidingWindowLogState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
@@ -578,6 +579,63 @@ public class SlidingWindowLogAlgorithmImplTest {
 			// Assert
 			assertFalse(justBeforeResult.isAllowed(), "Should still be denied 1ms before retryAfter");
 			assertTrue(exactResult.isAllowed(), "Should be allowed exactly at retryAfter");
+
+		}
+
+	}
+	
+	@Nested
+	class CodecCases {
+
+		@Test
+		void encodeThenDecodeShouldReturnEquivalentState() {
+
+			// Arrange
+			StateCodec<SlidingWindowLogState> codec = algorithm.getCodec();
+			SlidingWindowLogState original = stateWithTimestampsAt(
+					fixedNow.minusSeconds(10),
+					fixedNow.minusSeconds(5),
+					fixedNow
+			);
+
+			// Act
+			SlidingWindowLogState decoded = codec.decode(codec.encode(original));
+
+			// Assert
+			assertEquals(original.getTimestamps(), decoded.getTimestamps());
+
+		}
+
+		@Test
+		void encodeThenDecodeShouldWorkWithEmptyList() {
+
+			// Arrange
+			// Caso critico: split(",") sobre string vacio puede romper
+			// si el codec no tiene el guard correspondiente.
+			StateCodec<SlidingWindowLogState> codec = algorithm.getCodec();
+			SlidingWindowLogState original = stateWith(new ArrayList<>());
+
+			// Act
+			SlidingWindowLogState decoded = codec.decode(codec.encode(original));
+
+			// Assert
+			assertTrue(decoded.getTimestamps().isEmpty());
+
+		}
+
+		@Test
+		void encodeThenDecodeShouldWorkWithSingleTimestamp() {
+
+			// Arrange
+			StateCodec<SlidingWindowLogState> codec = algorithm.getCodec();
+			SlidingWindowLogState original = stateWithTimestampsAt(fixedNow);
+
+			// Act
+			SlidingWindowLogState decoded = codec.decode(codec.encode(original));
+
+			// Assert
+			assertEquals(1, decoded.getTimestamps().size());
+			assertEquals(Long.valueOf(fixedNow.toEpochMilli()), decoded.getTimestamps().get(0));
 
 		}
 

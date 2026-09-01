@@ -1,8 +1,10 @@
 package io.github.lauto5.rateLimit.domain.algorithm;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 
+import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
 import io.github.lauto5.rateLimit.domain.algorithmState.FixedWindowState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
@@ -10,6 +12,34 @@ import io.github.lauto5.rateLimit.domain.policies.FixedWindowPolicy;
 
 public class FixedWindowAlgorithmImpl implements FixedWindowAlgorithm {
 
+	private static final StateCodec<FixedWindowState> CODEC = new StateCodec<FixedWindowState>() {
+
+		@Override
+		public byte[] encode(FixedWindowState state) {
+
+			String raw = state.getCount() + "|" + state.getWindowStart().toEpochMilli();
+
+			return raw.getBytes(StandardCharsets.UTF_8);
+		}
+
+		@Override
+		public FixedWindowState decode(byte[] data) {
+
+			String[] parts = new String(data, StandardCharsets.UTF_8).split("\\|");
+
+			int count = Integer.parseInt(parts[0]);
+			Instant windowStart = Instant.ofEpochMilli(Long.parseLong(parts[1]));
+
+			return new FixedWindowState(count, windowStart);
+		}
+
+	};
+	
+	@Override
+	public StateCodec<FixedWindowState> getCodec() {
+		return CODEC;
+	}
+	
 	@Override
 	public AlgorithmResult<FixedWindowState> execute(FixedWindowState state, FixedWindowPolicy policy,
 			AlgorithmContext context) {
@@ -101,4 +131,6 @@ public class FixedWindowAlgorithmImpl implements FixedWindowAlgorithm {
 	private boolean isWindowExpired(Instant now , Instant windowEnd ) {
 		return !now.isBefore(windowEnd);
 	}
+
+
 }

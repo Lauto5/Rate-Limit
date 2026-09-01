@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
 import io.github.lauto5.rateLimit.domain.algorithmState.LeakyBucketState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
@@ -502,5 +503,42 @@ public class LeakyBucketAlgorithmImplTest {
 		}
 
 	}
+	
+	@Nested
+	class CodecCases {
+
+		@Test
+		void encodeThenDecodeShouldReturnEquivalentState() {
+
+			// Arrange
+			StateCodec<LeakyBucketState> codec = algorithm.getCodec();
+			LeakyBucketState original = new LeakyBucketState(3.7, fixedNow.toEpochMilli());
+
+			// Act
+			LeakyBucketState decoded = codec.decode(codec.encode(original));
+
+			// Assert
+			assertEquals(original.getWater(), decoded.getWater(), 0.0001);
+			assertEquals(original.getLastLeak(), decoded.getLastLeak());
+
+		}
+
+		@Test
+		void encodeThenDecodeShouldWorkWithZeroWater() {
+
+			// Arrange
+			StateCodec<LeakyBucketState> codec = algorithm.getCodec();
+			LeakyBucketState original = new LeakyBucketState(0.0, fixedNow.toEpochMilli());
+
+			// Act
+			LeakyBucketState decoded = codec.decode(codec.encode(original));
+
+			// Assert
+			assertEquals(0.0, decoded.getWater(), 0.0001);
+
+		}
+
+	}
+	
 
 }

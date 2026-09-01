@@ -1,10 +1,13 @@
 package io.github.lauto5.rateLimit.domain.algorithm;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
 import io.github.lauto5.rateLimit.domain.algorithmState.SlidingWindowCounterState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
@@ -13,6 +16,42 @@ import io.github.lauto5.rateLimit.domain.policies.SlidingWindowCounterPolicy;
 public class SlidingWindowCounterAlgorithmImpl
         implements SlidingWindowCounterAlgorithm {
 
+	private static final StateCodec<SlidingWindowCounterState> CODEC = new StateCodec<SlidingWindowCounterState>() {
+
+		@Override
+		public byte[] encode(SlidingWindowCounterState state) {
+
+			String raw = state.getWindows().entrySet().stream()
+					.map(entry -> entry.getKey() + ":" + entry.getValue())
+					.collect(Collectors.joining(","));
+
+			return raw.getBytes(StandardCharsets.UTF_8);
+		}
+
+		@Override
+		public SlidingWindowCounterState decode(byte[] data) {
+
+			String raw = new String(data, StandardCharsets.UTF_8);
+
+			Map<Long, Integer> windows = new HashMap<>();
+
+			if (!raw.isEmpty()) {
+				for (String entry : raw.split(",")) {
+					String[] keyValue = entry.split(":");
+					windows.put(Long.parseLong(keyValue[0]), Integer.parseInt(keyValue[1]));
+				}
+			}
+
+			return new SlidingWindowCounterState(windows);
+		}
+
+	};
+
+	@Override
+	public StateCodec<SlidingWindowCounterState> getCodec() {
+		return CODEC;
+	}
+	
     @Override
     public AlgorithmResult<SlidingWindowCounterState> execute(
             SlidingWindowCounterState state,

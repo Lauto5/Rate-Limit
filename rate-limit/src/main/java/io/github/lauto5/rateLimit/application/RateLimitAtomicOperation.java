@@ -4,6 +4,7 @@ import java.time.Instant;
 
 import io.github.lauto5.rateLimit.application.ports.out.AtomicOperation;
 import io.github.lauto5.rateLimit.application.ports.out.AtomicOperationResult;
+import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
 import io.github.lauto5.rateLimit.application.ports.out.StoreState;
 import io.github.lauto5.rateLimit.domain.algorithm.RateLimitAlgorithm;
 import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
@@ -64,6 +65,11 @@ public final class RateLimitAtomicOperation<S extends AlgorithmState, P extends 
 	@Override
 	public Instant getNow() {
 		return this.context.getNow();
+	}
+	
+	@Override
+	public StateCodec<S> getCodec() {
+		return algorithm.getCodec();
 	}
 
 }

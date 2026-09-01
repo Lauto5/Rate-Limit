@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
 import io.github.lauto5.rateLimit.domain.algorithmState.TokenBucketState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
@@ -545,4 +546,40 @@ public class TokenBucketAlgorithmImplTest {
 
 	}
 
+	@Nested
+	class CodecCases {
+
+		@Test
+		void encodeThenDecodeShouldReturnEquivalentState() {
+
+			// Arrange
+			StateCodec<TokenBucketState> codec = algorithm.getCodec();
+			TokenBucketState original = new TokenBucketState(2.5, fixedNow);
+
+			// Act
+			TokenBucketState decoded = codec.decode(codec.encode(original));
+
+			// Assert
+			assertEquals(original.getTokens(), decoded.getTokens(), 0.0001);
+			assertEquals(original.getLastRefill(), decoded.getLastRefill());
+
+		}
+
+		@Test
+		void encodeThenDecodeShouldWorkWithZeroTokens() {
+
+			// Arrange
+			StateCodec<TokenBucketState> codec = algorithm.getCodec();
+			TokenBucketState original = new TokenBucketState(0.0, fixedNow);
+
+			// Act
+			TokenBucketState decoded = codec.decode(codec.encode(original));
+
+			// Assert
+			assertEquals(0.0, decoded.getTokens(), 0.0001);
+
+		}
+
+	}
+	
 }

@@ -9,4 +9,6 @@ public interface AtomicOperation <S extends AlgorithmState>{
 	public AtomicOperationResult<S> apply(StoreState<S> currentStoreState);
 	
     public Instant getNow();
+    
+    public StateCodec<S> getCodec();
 }

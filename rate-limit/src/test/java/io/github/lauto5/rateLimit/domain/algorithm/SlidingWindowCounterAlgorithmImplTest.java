@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
 import io.github.lauto5.rateLimit.domain.algorithmState.SlidingWindowCounterState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
@@ -1082,4 +1083,66 @@ public class SlidingWindowCounterAlgorithmImplTest {
             );
         }
     }
+    
+    @Nested
+    class CodecCases {
+
+    	@Test
+    	void encodeThenDecodeShouldReturnEquivalentState() {
+
+    		// Arrange
+    		StateCodec<SlidingWindowCounterState> codec = algorithm.getCodec();
+
+    		Map<Long, Integer> windows = new HashMap<>();
+    		windows.put(standardBucketFor(fixedNow), 3);
+    		windows.put(standardBucketFor(fixedNow.minusSeconds(20)), 2);
+
+    		SlidingWindowCounterState original = stateWith(windows);
+
+    		// Act
+    		SlidingWindowCounterState decoded = codec.decode(codec.encode(original));
+
+    		// Assert
+    		assertEquals(original.getWindows(), decoded.getWindows());
+
+    	}
+
+    	@Test
+    	void encodeThenDecodeShouldWorkWithEmptyMap() {
+
+    		// Arrange
+    		// Mismo caso critico que en Log: mapa recien creado (vacio)
+    		// no debe romper el parsing.
+    		StateCodec<SlidingWindowCounterState> codec = algorithm.getCodec();
+    		SlidingWindowCounterState original = stateWith(new HashMap<>());
+
+    		// Act
+    		SlidingWindowCounterState decoded = codec.decode(codec.encode(original));
+
+    		// Assert
+    		assertTrue(decoded.getWindows().isEmpty());
+
+    	}
+
+    	@Test
+    	void encodeThenDecodeShouldWorkWithSingleBucket() {
+
+    		// Arrange
+    		StateCodec<SlidingWindowCounterState> codec = algorithm.getCodec();
+
+    		Map<Long, Integer> windows = new HashMap<>();
+    		windows.put(standardBucketFor(fixedNow), 1);
+
+    		SlidingWindowCounterState original = stateWith(windows);
+
+    		// Act
+    		SlidingWindowCounterState decoded = codec.decode(codec.encode(original));
+
+    		// Assert
+    		assertEquals(Integer.valueOf(1), decoded.getWindows().get(standardBucketFor(fixedNow)));
+
+    	}
+
+    }
+    
 }

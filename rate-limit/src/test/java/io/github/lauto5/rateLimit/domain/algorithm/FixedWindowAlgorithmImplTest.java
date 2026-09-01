@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
 import io.github.lauto5.rateLimit.domain.algorithmState.FixedWindowState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
@@ -602,6 +603,44 @@ public class FixedWindowAlgorithmImplTest {
 			AllowedDecision decision2 = extractAllowed(secondRequest);
 			assertEquals(2, secondRequest.getState().getCount());
 			assertEquals(3, decision2.getRemaining());
+
+		}
+
+	}
+	
+	@Nested
+	class CodecCases {
+
+		@Test
+		void encodeThenDecodeShouldReturnEquivalentState() {
+
+			// Arrange
+			StateCodec<FixedWindowState> codec = algorithm.getCodec();
+			FixedWindowState original = new FixedWindowState(3, fixedNow);
+
+			// Act
+			byte[] encoded = codec.encode(original);
+			FixedWindowState decoded = codec.decode(encoded);
+
+			// Assert
+			assertEquals(original.getCount(), decoded.getCount());
+			assertEquals(original.getWindowStart(), decoded.getWindowStart());
+
+		}
+
+		@Test
+		void encodeThenDecodeShouldWorkWithZeroCount() {
+
+			// Arrange
+			StateCodec<FixedWindowState> codec = algorithm.getCodec();
+			FixedWindowState original = new FixedWindowState(0, fixedNow);
+
+			// Act
+			FixedWindowState decoded = codec.decode(codec.encode(original));
+
+			// Assert
+			assertEquals(0, decoded.getCount());
+			assertEquals(fixedNow, decoded.getWindowStart());
 
 		}
 

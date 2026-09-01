@@ -1,8 +1,10 @@
 package io.github.lauto5.rateLimit.domain.algorithm;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 
+import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
 import io.github.lauto5.rateLimit.domain.algorithmState.TokenBucketState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
@@ -10,6 +12,35 @@ import io.github.lauto5.rateLimit.domain.policies.TokenBucketPolicy;
 
 public class TokenBucketAlgorithmImpl implements TokenBucketAlgorithm {
 
+
+	private static final StateCodec<TokenBucketState> CODEC = new StateCodec<TokenBucketState>() {
+
+		@Override
+		public byte[] encode(TokenBucketState state) {
+
+			String raw = state.getTokens() + "|" + state.getLastRefill().toEpochMilli();
+
+			return raw.getBytes(StandardCharsets.UTF_8);
+		}
+
+		@Override
+		public TokenBucketState decode(byte[] data) {
+
+			String[] parts = new String(data, StandardCharsets.UTF_8).split("\\|");
+
+			double tokens = Double.parseDouble(parts[0]);
+			Instant lastRefill = Instant.ofEpochMilli(Long.parseLong(parts[1]));
+
+			return new TokenBucketState(tokens, lastRefill);
+		}
+
+	};
+
+	@Override
+	public StateCodec<TokenBucketState> getCodec() {
+		return CODEC;
+	}
+	
 	private static final double TOKEN_COST = 1.0;
 
 	@Override

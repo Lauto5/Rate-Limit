@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
 import io.github.lauto5.rateLimit.domain.algorithmState.GcraState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
@@ -445,5 +446,41 @@ public class GcraAlgorithmImplTest {
 		}
 
 	}
+	
+	@Nested
+	class CodecCases {
+
+		@Test
+		void encodeThenDecodeShouldReturnEquivalentState() {
+
+			// Arrange
+			StateCodec<GcraState> codec = algorithm.getCodec();
+			GcraState original = new GcraState(fixedNow.plusSeconds(5).toEpochMilli());
+
+			// Act
+			GcraState decoded = codec.decode(codec.encode(original));
+
+			// Assert
+			assertEquals(original.getTat(), decoded.getTat());
+
+		}
+
+		@Test
+		void encodeThenDecodeShouldWorkWithZeroTat() {
+
+			// Arrange
+			StateCodec<GcraState> codec = algorithm.getCodec();
+			GcraState original = new GcraState(0L);
+
+			// Act
+			GcraState decoded = codec.decode(codec.encode(original));
+
+			// Assert
+			assertEquals(0L, decoded.getTat());
+
+		}
+
+	}
+	
 
 }
