@@ -24,7 +24,7 @@ import io.github.lauto5.rateLimit.domain.model.AllowedDecision;
 import io.github.lauto5.rateLimit.domain.model.DeniedDecision;
 import io.github.lauto5.rateLimit.domain.policies.SlidingWindowLogPolicy;
 
-public class SlidingWindowLogAlgorithmImplTest {
+public class SlidingWindowLogAlgorithmImplUnitTest {
 
 	private SlidingWindowLogAlgorithm algorithm;
 	private SlidingWindowLogPolicy standardPolicy;

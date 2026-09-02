@@ -10,7 +10,7 @@ import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-public class FixedWindowPolicyTest {
+public class FixedWindowPolicyUnitTest {
 
 	// ==================== TESTS ====================
 

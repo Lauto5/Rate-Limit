@@ -22,7 +22,7 @@ import io.github.lauto5.rateLimit.domain.model.AllowedDecision;
 import io.github.lauto5.rateLimit.domain.model.DeniedDecision;
 import io.github.lauto5.rateLimit.domain.policies.FixedWindowPolicy;
 
-public class FixedWindowAlgorithmImplTest {
+public class FixedWindowAlgorithmImplUnitTest {
 
 	private FixedWindowAlgorithm algorithm;
 	private FixedWindowPolicy standardPolicy;

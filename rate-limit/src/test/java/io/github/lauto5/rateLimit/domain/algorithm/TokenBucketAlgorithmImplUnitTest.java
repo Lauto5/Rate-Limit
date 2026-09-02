@@ -21,7 +21,7 @@ import io.github.lauto5.rateLimit.domain.model.AllowedDecision;
 import io.github.lauto5.rateLimit.domain.model.DeniedDecision;
 import io.github.lauto5.rateLimit.domain.policies.TokenBucketPolicy;
 
-public class TokenBucketAlgorithmImplTest {
+public class TokenBucketAlgorithmImplUnitTest {
 
 	private TokenBucketAlgorithm algorithm;
 	private TokenBucketPolicy standardPolicy;

@@ -23,7 +23,7 @@ import io.github.lauto5.rateLimit.domain.model.AllowedDecision;
 import io.github.lauto5.rateLimit.domain.model.DeniedDecision;
 import io.github.lauto5.rateLimit.domain.policies.SlidingWindowCounterPolicy;
 
-public class SlidingWindowCounterAlgorithmImplTest {
+public class SlidingWindowCounterAlgorithmImplUnitTest {
 
     private SlidingWindowCounterAlgorithm algorithm;
     private SlidingWindowCounterPolicy standardPolicy;

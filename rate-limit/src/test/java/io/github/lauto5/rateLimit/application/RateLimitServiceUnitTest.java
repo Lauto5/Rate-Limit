@@ -24,7 +24,7 @@ import io.github.lauto5.rateLimit.domain.policies.FixedWindowPolicy;
 import io.github.lauto5.rateLimit.testdoubles.FakeRateLimitStore;
 import io.github.lauto5.rateLimit.testdoubles.StubRateLimitAlgorithm;
 
-class RateLimitServiceTest {
+class RateLimitServiceUnitTest {
 
     private static final Instant FIXED_NOW =
             Instant.parse("2026-01-01T10:00:00Z");

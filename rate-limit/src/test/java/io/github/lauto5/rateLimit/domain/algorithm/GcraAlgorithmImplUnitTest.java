@@ -22,7 +22,7 @@ import io.github.lauto5.rateLimit.domain.model.AllowedDecision;
 import io.github.lauto5.rateLimit.domain.model.DeniedDecision;
 import io.github.lauto5.rateLimit.domain.policies.GcraPolicy;
 
-public class GcraAlgorithmImplTest {
+public class GcraAlgorithmImplUnitTest {
 
 	private GcraAlgorithm algorithm;
 	private GcraPolicy standardPolicy;

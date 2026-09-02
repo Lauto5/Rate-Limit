@@ -15,7 +15,7 @@ import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
 import io.github.lauto5.rateLimit.testdoubles.FakeAtomicOperation;
 
-class InMemoryStoreTest {
+class InMemoryStoreUnitTest {
 
 	private static final Instant NOW = Instant.parse("2026-01-01T10:00:00Z");
 

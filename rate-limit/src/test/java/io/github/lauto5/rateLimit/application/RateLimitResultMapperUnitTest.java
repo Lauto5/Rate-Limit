@@ -17,7 +17,7 @@ import io.github.lauto5.rateLimit.application.ports.out.AtomicOperationResult;
 import io.github.lauto5.rateLimit.domain.algorithmState.FixedWindowState;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
 
-class RateLimitResultMapperTest {
+class RateLimitResultMapperUnitTest {
 
 	private static final Instant FIXED_NOW =
 			Instant.parse("2026-01-01T10:00:00Z");
