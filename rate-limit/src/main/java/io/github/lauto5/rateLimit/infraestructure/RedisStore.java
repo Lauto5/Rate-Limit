@@ -1,60 +1,36 @@
 package io.github.lauto5.rateLimit.infraestructure;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 
-import io.lettuce.core.RedisClient;
-import io.lettuce.core.ScriptOutputType;
-import io.lettuce.core.api.StatefulRedisConnection;
-import io.lettuce.core.api.sync.RedisCommands;
-import io.lettuce.core.codec.ByteArrayCodec;
-import io.lettuce.core.codec.RedisCodec;
-import io.lettuce.core.codec.StringCodec;
-
 import io.github.lauto5.rateLimit.application.ports.out.AtomicOperation;
 import io.github.lauto5.rateLimit.application.ports.out.AtomicOperationResult;
+import io.github.lauto5.rateLimit.application.ports.out.KeyValueStorePort;
 import io.github.lauto5.rateLimit.application.ports.out.RateLimitStore;
 import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
 import io.github.lauto5.rateLimit.application.ports.out.StoreState;
 import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
 
-public class RedisStore implements RateLimitStore, AutoCloseable {
-
-	private static final RedisCodec<String, byte[]> WIRE_CODEC = RedisCodec.of(
-			StringCodec.UTF8,
-			ByteArrayCodec.INSTANCE
-	);
-
-	private static final String CAS_SCRIPT =
-			"local current = redis.call('GET', KEYS[1]) "
-			+ "local expectedExists = ARGV[1] "
-			+ "if expectedExists == '1' then "
-			+ "  if current == false or current ~= ARGV[2] then return 0 end "
-			+ "else "
-			+ "  if current ~= false then return 0 end "
-			+ "end "
-			+ "redis.call('SET', KEYS[1], ARGV[3], 'PX', ARGV[4]) "
-			+ "return 1";
+public class RedisStore implements RateLimitStore , AutoCloseable{
 
 	private static final int MAX_RETRIES = 10;
 
 	private static final long MIN_TTL_MILLIS = 1L;
 
-	private final StatefulRedisConnection<String, byte[]> connection;
+	private final KeyValueStorePort keyValueStore;
 
-	public RedisStore(RedisClient client) {
+	public RedisStore(KeyValueStorePort keyValueStore) {
 		super();
-		this.connection = client.connect(WIRE_CODEC);
+		this.keyValueStore = keyValueStore;
 	}
+	
+	
 
 	@Override
 	public <S extends AlgorithmState> AtomicOperationResult<S> executeAtomically(String identifier,
 			AtomicOperation<S> operation) {
 
 		StateCodec<S> codec = operation.getCodec();
-
-		RedisCommands<String, byte[]> commands = connection.sync();
 
 		/*
 		 * 1 :
@@ -65,7 +41,7 @@ public class RedisStore implements RateLimitStore, AutoCloseable {
 
 		for (int attempt = 0; attempt < MAX_RETRIES; attempt++) {
 
-			byte[] currentBytes = commands.get(identifier);
+			byte[] currentBytes = keyValueStore.get(identifier);
 
 			StoreState<S> currentStoreState = toStoreState(currentBytes, codec);
 
@@ -75,17 +51,11 @@ public class RedisStore implements RateLimitStore, AutoCloseable {
 
 			long ttlMillis = calculateTtlMillis(operation.getNow(), result.getExpiresAt());
 
-			boolean applied = compareAndSwap(commands, identifier, currentBytes, newBytes, ttlMillis);
+			boolean applied = keyValueStore.compareAndSwap(identifier, currentBytes, newBytes, ttlMillis);
 
 			if (applied) {
 				return result;
 			}
-
-			/*
-			 * Conflicto: otro proceso escribió sobre esta key
-			 * entre nuestro GET y nuestro intento de SET.
-			 * Reintentamos leyendo el valor mas reciente.
-			 */
 
 		}
 
@@ -104,13 +74,6 @@ public class RedisStore implements RateLimitStore, AutoCloseable {
 
 		S decodedState = codec.decode(currentBytes);
 
-		/*
-		 * NOTA: expiresAt no se usa por ningun algoritmo dentro de
-		 * apply() (solo se lee state.getState()); Redis maneja el TTL
-		 * de forma nativa via PX. Se pasa un valor dummy solo para
-		 * satisfacer el constructor de StoreState.
-		 */
-
 		return new StoreState<>(decodedState, Instant.EPOCH);
 	}
 
@@ -121,29 +84,11 @@ public class RedisStore implements RateLimitStore, AutoCloseable {
 		return Math.max(ttlMillis, MIN_TTL_MILLIS);
 	}
 
-	private boolean compareAndSwap(RedisCommands<String, byte[]> commands, String identifier, byte[] currentBytes,
-			byte[] newBytes, long ttlMillis) {
 
-		String expectedExists = (currentBytes != null) ? "1" : "0";
-
-		byte[] expectedValue = (currentBytes != null) ? currentBytes : new byte[0];
-
-		Long casResult = commands.eval(
-				CAS_SCRIPT,
-				ScriptOutputType.INTEGER,
-				new String[] { identifier },
-				expectedExists.getBytes(StandardCharsets.UTF_8),
-				expectedValue,
-				newBytes,
-				String.valueOf(ttlMillis).getBytes(StandardCharsets.UTF_8)
-		);
-
-		return Long.valueOf(1L).equals(casResult);
-	}
 
 	@Override
-	public void close() {
-		connection.close();
+	public void close() throws Exception {
+		this.keyValueStore.close();
 	}
 
 }
