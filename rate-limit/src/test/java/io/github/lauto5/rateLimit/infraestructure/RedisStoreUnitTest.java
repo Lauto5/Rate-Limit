@@ -16,48 +16,35 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 import io.github.lauto5.rateLimit.application.RateLimitAtomicOperation;
 import io.github.lauto5.rateLimit.application.ports.out.AtomicOperationResult;
 import io.github.lauto5.rateLimit.domain.algorithm.FixedWindowAlgorithmImpl;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.policies.FixedWindowPolicy;
+import io.github.lauto5.rateLimit.testdoubles.FakeKeyValueStore;
 
-@Testcontainers
-public class RedisStoreIntegrationTest {
+public class RedisStoreUnitTest {
 
-	private static GenericContainer<?> redisContainer;
-	private static RedisStore redisStore;
+	private FakeKeyValueStore fakeKeyValueStore;
+	private RedisStore redisStore;
 
-	@SuppressWarnings("resource")
-	@BeforeAll
-	static void startRedis() {
-
-		redisContainer = new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
-				.withExposedPorts(6379);
-
-		redisContainer.start();
-
-		String redisUrl = "redis://" + redisContainer.getHost() + ":" + redisContainer.getMappedPort(6379);
-		
-		redisStore = new RedisStore(new LettuceKeyValueStore(redisUrl));
-
+	@BeforeEach
+	void setUp() {
+		fakeKeyValueStore = new FakeKeyValueStore();
+		redisStore = new RedisStore(fakeKeyValueStore);
 	}
 
-	@AfterAll
-	static void stopRedis() throws Exception {
-		redisStore.close();;
-		redisContainer.stop();
+	@AfterEach
+	void tearDown() throws Exception {
+		redisStore.close();
 	}
 
 	@Test
-	void firstRequestShouldBeAllowedAndPersistedInRedis() {
+	void firstRequestShouldBeAllowedAndPersisted() {
 
 		// Arrange
 		FixedWindowAlgorithmImpl algorithm = new FixedWindowAlgorithmImpl();
@@ -72,6 +59,7 @@ public class RedisStoreIntegrationTest {
 
 		// Assert
 		assertTrue(result.getAlgorithmResult().isAllowed());
+		assertTrue(fakeKeyValueStore.exists("test-user-1"));
 
 	}
 
@@ -79,10 +67,6 @@ public class RedisStoreIntegrationTest {
 	void concurrentRequestsShouldNotExceedLimitDueToRaceCondition() throws Exception {
 
 		// Arrange
-		// Limite de 1: si el CAS no funcionara (GET/SET plano sin
-		// atomicidad), varios threads podrian leer count=0 al mismo
-		// tiempo y todos ser permitidos. Con el CAS, solo UNO debe ganar.
-
 		int threadCount = 20;
 
 		FixedWindowAlgorithmImpl algorithm = new FixedWindowAlgorithmImpl();
@@ -94,7 +78,7 @@ public class RedisStoreIntegrationTest {
 
 		Callable<Boolean> task = () -> {
 
-			barrier.await(); // todos los threads disparan lo mas cerca posible entre si
+			barrier.await();
 
 			AlgorithmContext context = new AlgorithmContext(Instant.now());
 
@@ -124,12 +108,8 @@ public class RedisStoreIntegrationTest {
 		}
 
 		// Assert
-		// Con limite=1, exactamente 1 de los N threads concurrentes
-		// debe haber sido permitido; el resto debe haber sido denegado
-		// por el algoritmo (no por errores del store).
 		assertEquals(1, allowedCount.get(),
-				"Con un limite de 1, exactamente 1 request concurrente debe ser ALLOWED "
-						+ "(si da mas de 1, el CAS no esta previniendo la condicion de carrera)");
+				"Con un limite de 1, exactamente 1 request concurrente debe ser ALLOWED");
 
 	}
 
