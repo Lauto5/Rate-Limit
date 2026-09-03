@@ -10,11 +10,29 @@ import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
 import io.github.lauto5.rateLimit.domain.model.AllowedDecision;
 import io.github.lauto5.rateLimit.domain.model.DeniedDecision;
 
+/**
+ * Maps internal algorithm results into public {@link RateLimitResult} instances.
+ *
+ * <p>This utility converts an {@link AtomicOperationResult} into the {@code RateLimitResult}
+ * exposed through the public API, dispatching on whether the underlying decision is an
+ * {@link AllowedDecision} or a {@link DeniedDecision}.
+ *
+ * <p>This class is not intended to be instantiated, as it only provides static utility methods.
+ */
 public class RateLimitResultMapper {
 
     private RateLimitResultMapper() {
     }
 
+    /**
+     * Maps an atomic operation result to its public API representation.
+     *
+     * @param atomicResult the atomic operation result to map
+     * @param <S>          the concrete algorithm state type
+     * @return the corresponding {@code RateLimitResult}
+     * @throws IllegalArgumentException if {@code atomicResult} is {@code null}
+     * @throws IllegalStateException    if the underlying decision is of an unexpected type
+     */
     public static <S extends AlgorithmState> RateLimitResult fromAtomicOperationResult(
             AtomicOperationResult<S> atomicResult) {
 

@@ -10,6 +10,14 @@ import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
 import io.github.lauto5.rateLimit.domain.policies.TokenBucketPolicy;
 
+/**
+ * Default implementation of {@link TokenBucketAlgorithm}.
+ *
+ * <p>Tokens are recomputed on each request based on the elapsed time and the refill rate,
+ * capped at the bucket capacity. A request is allowed whenever at least one token is available
+ * and consumes one token. State is serialized as a UTF-8 string containing the token count and
+ * the last refill instant.
+ */
 public class TokenBucketAlgorithmImpl implements TokenBucketAlgorithm {
 
 

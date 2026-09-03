@@ -10,6 +10,14 @@ import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
 import io.github.lauto5.rateLimit.domain.policies.FixedWindowPolicy;
 
+/**
+ * Default implementation of {@link FixedWindowAlgorithm}.
+ *
+ * <p>A request is allowed while the count within the current fixed window is below the
+ * configured limit. Once the window has elapsed, it is reset and the request counters starts
+ * anew. State is serialized as a UTF-8 string containing the count and the window start
+ * instant.
+ */
 public class FixedWindowAlgorithmImpl implements FixedWindowAlgorithm {
 
 	private static final StateCodec<FixedWindowState> CODEC = new StateCodec<FixedWindowState>() {

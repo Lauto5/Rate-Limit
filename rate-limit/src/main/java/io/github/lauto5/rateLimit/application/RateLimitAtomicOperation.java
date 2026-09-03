@@ -12,6 +12,17 @@ import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
 import io.github.lauto5.rateLimit.domain.policies.RateLimitPolicy;
 
+/**
+ * Default {@link AtomicOperation} that orchestrates a rate-limit evaluation within a store.
+ *
+ * <p>Given a {@link RateLimitAlgorithm}, a policy and an {@link AlgorithmContext}, this
+ * operation: (1) creates an initial state when the store holds none, (2) runs the algorithm
+ * against the resolved state, and (3) computes the expiry instant for the resulting state. It
+ * is executed atomically by a {@link RateLimitStore}.
+ *
+ * @param <S> the concrete algorithm state type
+ * @param <P> the concrete policy type
+ */
 public final class RateLimitAtomicOperation<S extends AlgorithmState, P extends RateLimitPolicy>
 		implements AtomicOperation<S> {
 
@@ -19,6 +30,13 @@ public final class RateLimitAtomicOperation<S extends AlgorithmState, P extends 
 	private final P policy;
 	private final AlgorithmContext context;
 
+	/**
+	 * Creates an atomic rate-limit operation.
+	 *
+	 * @param algorithm the algorithm that evaluates each request
+	 * @param policy    the policy whose limits are enforced
+	 * @param context   the evaluation context carrying the current instant
+	 */
 	public RateLimitAtomicOperation(RateLimitAlgorithm<S, P> algorithm, P policy, AlgorithmContext context) {
 		super();
 		this.algorithm = algorithm;
@@ -26,6 +44,14 @@ public final class RateLimitAtomicOperation<S extends AlgorithmState, P extends 
 		this.context = context;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>If {@code currentStoreState} is {@code null}, an initial state is created via
+	 * {@link RateLimitAlgorithm#createInitialState}. The resolved state is then passed to
+	 * {@link RateLimitAlgorithm#execute} and the resulting state's expiry is derived from the
+	 * {@code expireIn} duration of the algorithm result.
+	 */
 	@Override
 	public AtomicOperationResult<S> apply(StoreState<S> currentStoreState) {
 
@@ -62,11 +88,17 @@ public final class RateLimitAtomicOperation<S extends AlgorithmState, P extends 
 		return new AtomicOperationResult<>(expiresAt , algorithmResult);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Instant getNow() {
 		return this.context.getNow();
 	}
 	
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public StateCodec<S> getCodec() {
 		return algorithm.getCodec();
