@@ -118,7 +118,7 @@ class RateLimitResultMapperUnitTest {
 			);
 
 			assertTrue(
-					result.getRetryAfter().isEmpty()
+					!result.getRetryAfter().isPresent()
 			);
 
 			assertEquals(

@@ -330,7 +330,7 @@ class RateLimitServiceUnitTest {
         );
 
         assertTrue(
-                result.getRetryAfter().isEmpty()
+                !result.getRetryAfter().isPresent()
         );
 
         assertEquals(
