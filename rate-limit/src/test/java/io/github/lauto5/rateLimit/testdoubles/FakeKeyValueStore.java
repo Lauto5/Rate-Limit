@@ -1,7 +1,9 @@
 package io.github.lauto5.rateLimit.testdoubles;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import io.github.lauto5.rateLimit.application.ports.out.KeyValueStorePort;
@@ -26,35 +28,28 @@ public final class FakeKeyValueStore implements KeyValueStorePort {
     public boolean compareAndSwap(String identifier, byte[] expectedValue, byte[] newValue, long ttlMillis) {
         cleanup();
 
-        byte[] current = store.get(identifier);
-        boolean expectedExists = (expectedValue != null);
-        boolean currentExists = (current != null);
+        AtomicBoolean swapped = new AtomicBoolean(false);
 
-        // Verificar condiciones CAS
-        if (expectedExists && !currentExists) {
-            return false;
-        }
-        
-        if (!expectedExists && currentExists) {
-            return false;
-        }
+        store.compute(identifier, (key, current) -> {
 
-        if (expectedExists && currentExists) {
-            // Comparar contenidos byte a byte
-            if (current.length != expectedValue.length) {
-                return false;
+            boolean expectedExists = (expectedValue != null);
+            boolean currentExists = (current != null);
+
+            // Las condiciones de existencia deben coincidir
+            if (expectedExists != currentExists) {
+                return current;
             }
-            for (int i = 0; i < current.length; i++) {
-                if (current[i] != expectedValue[i]) {
-                    return false;
-                }
-            }
-        }
 
-        // Actualizar valor y expiración
-        store.put(identifier, newValue);
-        expirations.put(identifier, currentTime.get() + ttlMillis);
-        return true;
+            if (expectedExists && !Arrays.equals(current, expectedValue)) {
+                return current;
+            }
+
+            swapped.set(true);
+            expirations.put(identifier, currentTime.get() + ttlMillis);
+            return newValue;
+        });
+
+        return swapped.get();
     }
 
     /**
