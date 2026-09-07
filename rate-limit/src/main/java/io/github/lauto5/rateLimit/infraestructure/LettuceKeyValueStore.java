@@ -10,6 +10,7 @@ import io.lettuce.core.codec.RedisCodec;
 import io.lettuce.core.codec.StringCodec;
 
 import io.github.lauto5.rateLimit.application.ports.out.KeyValueStorePort;
+import io.github.lauto5.rateLimit.application.ports.out.Logger;
 
 public class LettuceKeyValueStore implements KeyValueStorePort {
 
@@ -30,21 +31,34 @@ public class LettuceKeyValueStore implements KeyValueStorePort {
 			+ "return 1";
 
 	private final StatefulRedisConnection<String, byte[]> connection;
+	private final Logger logger;
 
 	public LettuceKeyValueStore(String url) {
+		this(url, NoOpLogger.getInstance());
+	}
+
+	public LettuceKeyValueStore(String url, Logger logger) {
 		super();
 		RedisClient client = RedisClient.create(url);
 		this.connection = client.connect(WIRE_CODEC);
+		this.logger = logger;
 	}
-	
+
 	public LettuceKeyValueStore(RedisClient client) {
+		this(client, NoOpLogger.getInstance());
+	}
+
+	public LettuceKeyValueStore(RedisClient client, Logger logger) {
 		super();
 		this.connection = client.connect(WIRE_CODEC);
+		this.logger = logger;
 	}
 
 	@Override
 	public byte[] get(String identifier) {
-		return connection.sync().get(identifier);
+		byte[] value = connection.sync().get(identifier);
+		logger.debug("GET '" + identifier + "' -> " + (value == null ? "<absent>" : value.length + " bytes"));
+		return value;
 	}
 
 	@Override
@@ -63,7 +77,9 @@ public class LettuceKeyValueStore implements KeyValueStorePort {
 				String.valueOf(ttlMillis).getBytes(StandardCharsets.UTF_8)
 		);
 
-		return Long.valueOf(1L).equals(casResult);
+		boolean applied = Long.valueOf(1L).equals(casResult);
+		logger.debug("CAS '" + identifier + "' with TTL " + ttlMillis + "ms -> " + (applied ? "applied" : "conflict"));
+		return applied;
 	}
 
 	@Override

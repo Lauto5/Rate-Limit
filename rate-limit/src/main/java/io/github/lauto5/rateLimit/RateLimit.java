@@ -5,10 +5,12 @@ import java.time.Clock;
 import io.github.lauto5.rateLimit.api.RateLimitResult;
 import io.github.lauto5.rateLimit.application.RateLimitExecutor;
 import io.github.lauto5.rateLimit.application.RateLimitService;
+import io.github.lauto5.rateLimit.application.ports.out.Logger;
 import io.github.lauto5.rateLimit.application.ports.out.RateLimitStore;
 import io.github.lauto5.rateLimit.domain.algorithm.RateLimitAlgorithm;
 import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
 import io.github.lauto5.rateLimit.domain.policies.RateLimitPolicy;
+import io.github.lauto5.rateLimit.infraestructure.NoOpLogger;
 
 /**
  * Public facade and entry point for the rate-limiting library.
@@ -51,7 +53,31 @@ public final class RateLimit<P extends RateLimitPolicy> {
         return build(
                 algorithm,
                 store,
-                Clock.systemUTC()
+                NoOpLogger.getInstance()
+        );
+    }
+
+    /**
+     * Builds a {@link RateLimit} using the system UTC clock and the provided {@link Logger}.
+     *
+     * @param algorithm the algorithm that evaluates each request against the configured state
+     * @param store     the persistent store used to hold and atomically update algorithm state
+     * @param logger    the logger used to emit diagnostic output throughout the pipeline
+     * @param <S>       the concrete algorithm state type
+     * @param <P>       the concrete policy type
+     * @return a ready-to-use {@code RateLimit} instance
+     */
+    public static <S extends AlgorithmState, P extends RateLimitPolicy>
+    RateLimit<P> build(
+            RateLimitAlgorithm<S, P> algorithm,
+            RateLimitStore store,
+            Logger logger) {
+
+        return build(
+                algorithm,
+                store,
+                Clock.systemUTC(),
+                logger
         );
     }
 
@@ -71,11 +97,38 @@ public final class RateLimit<P extends RateLimitPolicy> {
             RateLimitStore store,
             Clock clock) {
 
+        return build(
+                algorithm,
+                store,
+                clock,
+                NoOpLogger.getInstance()
+        );
+    }
+
+    /**
+     * Builds a {@link RateLimit} using the provided {@link Clock} and {@link Logger}.
+     *
+     * @param algorithm the algorithm that evaluates each request against the configured state
+     * @param store     the persistent store used to hold and atomically update algorithm state
+     * @param clock     the clock used to obtain the current instant, enabling deterministic testing
+     * @param logger    the logger used to emit diagnostic output throughout the pipeline
+     * @param <S>       the concrete algorithm state type
+     * @param <P>       the concrete policy type
+     * @return a ready-to-use {@code RateLimit} instance
+     */
+    public static <S extends AlgorithmState, P extends RateLimitPolicy>
+    RateLimit<P> build(
+            RateLimitAlgorithm<S, P> algorithm,
+            RateLimitStore store,
+            Clock clock,
+            Logger logger) {
+
         RateLimitService<S, P> service =
                 new RateLimitService<>(
                         store,
                         algorithm,
-                        clock
+                        clock,
+                        logger
                 );
 
         return new RateLimit<>(service);

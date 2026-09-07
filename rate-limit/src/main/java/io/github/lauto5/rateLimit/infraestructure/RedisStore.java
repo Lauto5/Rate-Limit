@@ -6,6 +6,7 @@ import java.time.Instant;
 import io.github.lauto5.rateLimit.application.ports.out.AtomicOperation;
 import io.github.lauto5.rateLimit.application.ports.out.AtomicOperationResult;
 import io.github.lauto5.rateLimit.application.ports.out.KeyValueStorePort;
+import io.github.lauto5.rateLimit.application.ports.out.Logger;
 import io.github.lauto5.rateLimit.application.ports.out.RateLimitStore;
 import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
 import io.github.lauto5.rateLimit.application.ports.out.StoreState;
@@ -18,13 +19,17 @@ public class RedisStore implements RateLimitStore , AutoCloseable{
 	private static final long MIN_TTL_MILLIS = 1L;
 
 	private final KeyValueStorePort keyValueStore;
+	private final Logger logger;
 
 	public RedisStore(KeyValueStorePort keyValueStore) {
+		this(keyValueStore, NoOpLogger.getInstance());
+	}
+
+	public RedisStore(KeyValueStorePort keyValueStore, Logger logger) {
 		super();
 		this.keyValueStore = keyValueStore;
+		this.logger = logger;
 	}
-	
-	
 
 	@Override
 	public <S extends AlgorithmState> AtomicOperationResult<S> executeAtomically(String identifier,
@@ -54,8 +59,13 @@ public class RedisStore implements RateLimitStore , AutoCloseable{
 			boolean applied = keyValueStore.compareAndSwap(identifier, currentBytes, newBytes, ttlMillis);
 
 			if (applied) {
+				logger.debug("Atomic update applied for identifier '" + identifier
+						+ "' with TTL " + ttlMillis + "ms");
 				return result;
 			}
+
+			logger.debug("Compare-and-swap collision for identifier '" + identifier
+					+ "' on attempt " + (attempt + 1) + "; retrying");
 
 		}
 
