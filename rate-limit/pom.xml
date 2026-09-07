@@ -6,15 +6,29 @@
 	<artifactId>rate-limit</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>rate limit</name>
+	<description>Lightweight extensible rate limiting library for Java built on hexagonal architecture.</description>
+	<url>https://github.com/lauto5/Rate-Limit</url>
 
 	<properties>
-		<maven.compiler.source>1.8</maven.compiler.source>
-		<maven.compiler.target>1.8</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+		<!-- Compilacion: todo el proyecto (main y tests) compila contra la API de
+		     Java 8, generando bytecode portable a Java 8+. -->
+		<maven.compiler.release>8</maven.compiler.release>
+
+		<!-- Version de JDK requerida para compilar con el flag release (JDK 9+) -->
+		<required.java.version>[9,)</required.java.version>
 
 		<!-- Final major release branch supporting Java 8 -->
 		<testcontainers.version>1.19.8</testcontainers.version>
 		<junit.jupiter.version>5.10.2</junit.jupiter.version>
+
+		<!-- Versiones de plugins -->
+		<maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
+		<maven.surefire.plugin.version>3.5.3</maven.surefire.plugin.version>
+		<maven.enforcer.plugin.version>3.5.0</maven.enforcer.plugin.version>
+		<jacoco.plugin.version>0.8.12</jacoco.plugin.version>
+		<exec.plugin.version>3.5.0</exec.plugin.version>
 	</properties>
 
 	<dependencies>
@@ -72,12 +86,92 @@
 
 	</dependencies>
 
-	<plugins>
-		<plugin>
-			<artifactId>maven-surefire-plugin</artifactId>
-			<version>3.5.3</version>
-		</plugin>
+	<build>
+		<plugins>
 
-	</plugins>
+			<!-- Compila contra la API de Java 8 (main y tests) -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>${maven.compiler.plugin.version}</version>
+				<configuration>
+					<release>${maven.compiler.release}</release>
+					<parameters>true</parameters>
+				</configuration>
+			</plugin>
+
+			<!-- Pruebas: salida limpia en terminal + reintento contra flaky -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>${maven.surefire.plugin.version}</version>
+				<configuration>
+					<!-- Mantiene la consola limpia; el System.out de los tests
+					     va a target/surefire-reports/ -->
+					<redirectTestOutputToFile>true</redirectTestOutputToFile>
+					<!-- Reintenta 1 vez si un test falla (tests flaky) -->
+					<rerunFailingTestsCount>1</rerunFailingTestsCount>
+					<!-- Cierra los stack traces largos en el resumen -->
+					<trimStackTrace>true</trimStackTrace>
+				</configuration>
+			</plugin>
+
+			<!-- Fija versiones de Java y Maven al construir -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>${maven.enforcer.plugin.version}</version>
+				<executions>
+					<execution>
+						<id>enforce-versions</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireJavaVersion>
+									<version>${required.java.version}</version>
+								</requireJavaVersion>
+								<requireMavenVersion>
+									<version>[3.9.0,)</version>
+								</requireMavenVersion>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- Cobertura: 'mvn verify' genera target/site/jacoco/index.html -->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco.plugin.version}</version>
+				<executions>
+					<execution>
+						<id>prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- Ejecutar un main desde terminal:
+			       mvn compile exec:java -Dexec.mainClass="..." -Dexec.args="..." -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>${exec.plugin.version}</version>
+			</plugin>
+
+		</plugins>
+	</build>
 
 </project>
