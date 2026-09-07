@@ -1,0 +1,35 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>io.github.lauto5</groupId>
+		<artifactId>rate-limit</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+	<artifactId>rate-limit-inmemory</artifactId>
+	<name>rate limit in-memory</name>
+	<description>Implementacion de persistencia en memoria para rate limiting.</description>
+
+	<dependencies>
+
+		<dependency>
+			<groupId>io.github.lauto5</groupId>
+			<artifactId>rate-limit-core</artifactId>
+		</dependency>
+
+		<!-- JUnit 5 Engine & API -->
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-api</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+	</dependencies>
+</project>

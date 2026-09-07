@@ -5,9 +5,16 @@
 	<groupId>io.github.lauto5</groupId>
 	<artifactId>rate-limit</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	<packaging>pom</packaging>
 	<name>rate limit</name>
 	<description>Lightweight extensible rate limiting library for Java built on hexagonal architecture.</description>
 	<url>https://github.com/lauto5/Rate-Limit</url>
+
+	<modules>
+		<module>rate-limit-core</module>
+		<module>rate-limit-inmemory</module>
+		<module>rate-limit-redis</module>
+	</modules>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -19,9 +26,11 @@
 		<!-- Version de JDK requerida para compilar con el flag release (JDK 9+) -->
 		<required.java.version>[9,)</required.java.version>
 
-		<!-- Final major release branch supporting Java 8 -->
+		<!-- Versiones -->
 		<testcontainers.version>1.19.8</testcontainers.version>
 		<junit.jupiter.version>5.10.2</junit.jupiter.version>
+		<lettuce.version>6.3.2.RELEASE</lettuce.version>
+		<slf4j.version>2.0.18</slf4j.version>
 
 		<!-- Versiones de plugins -->
 		<maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
@@ -31,74 +40,98 @@
 		<exec.plugin.version>3.5.0</exec.plugin.version>
 	</properties>
 
-	<dependencies>
+	<dependencyManagement>
+		<dependencies>
 
-		<!-- JUnit 5 Engine & API -->
-		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter-api</artifactId>
-			<version>${junit.jupiter.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter-engine</artifactId>
-			<version>${junit.jupiter.version}</version>
-			<scope>test</scope>
-		</dependency>
+			<!-- Modulos del proyecto -->
+			<dependency>
+				<groupId>io.github.lauto5</groupId>
+				<artifactId>rate-limit-core</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
-		<dependency>
-			<groupId>io.lettuce</groupId>
-			<artifactId>lettuce-core</artifactId>
-			<version>6.3.2.RELEASE</version>
-		</dependency>
+			<!-- JUnit 5 Engine & API -->
+			<dependency>
+				<groupId>org.junit.jupiter</groupId>
+				<artifactId>junit-jupiter-api</artifactId>
+				<version>${junit.jupiter.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.junit.jupiter</groupId>
+				<artifactId>junit-jupiter-engine</artifactId>
+				<version>${junit.jupiter.version}</version>
+				<scope>test</scope>
+			</dependency>
 
-		<!-- Testcontainers Core -->
-		<dependency>
-			<groupId>org.testcontainers</groupId>
-			<artifactId>testcontainers</artifactId>
-			<version>${testcontainers.version}</version>
-			<scope>test</scope>
-		</dependency>
+			<!-- Cliente Redis (Lettuce) -->
+			<dependency>
+				<groupId>io.lettuce</groupId>
+				<artifactId>lettuce-core</artifactId>
+				<version>${lettuce.version}</version>
+			</dependency>
 
-		<!-- Testcontainers JUnit 5 Extension -->
-		<dependency>
-			<groupId>org.testcontainers</groupId>
-			<artifactId>junit-jupiter</artifactId>
-			<version>${testcontainers.version}</version>
-			<scope>test</scope>
-		</dependency>
+			<!-- Testcontainers Core -->
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>testcontainers</artifactId>
+				<version>${testcontainers.version}</version>
+				<scope>test</scope>
+			</dependency>
 
-		<!-- SLF4J API -->
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-			<version>2.0.18</version>
-		</dependency>
+			<!-- Testcontainers JUnit 5 Extension -->
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>junit-jupiter</artifactId>
+				<version>${testcontainers.version}</version>
+				<scope>test</scope>
+			</dependency>
 
-		<!-- SLF4J Simple Provider (outputs to System.err) -->
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-simple</artifactId>
-			<version>2.0.18</version>
-			<scope>runtime</scope>
-		</dependency>
+			<!-- SLF4J API -->
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-api</artifactId>
+				<version>${slf4j.version}</version>
+			</dependency>
 
-	</dependencies>
+			<!-- SLF4J Simple Provider (outputs to System.err) -->
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-simple</artifactId>
+				<version>${slf4j.version}</version>
+				<scope>runtime</scope>
+			</dependency>
+
+		</dependencies>
+	</dependencyManagement>
 
 	<build>
-		<plugins>
+		<pluginManagement>
+			<plugins>
 
-			<!-- Compila contra la API de Java 8 (main y tests) -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>${maven.compiler.plugin.version}</version>
-				<configuration>
-					<release>${maven.compiler.release}</release>
-					<parameters>true</parameters>
-				</configuration>
-			</plugin>
+				<!-- Compila contra la API de Java 8 (main y tests) -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>${maven.compiler.plugin.version}</version>
+					<configuration>
+						<release>${maven.compiler.release}</release>
+						<parameters>true</parameters>
+					</configuration>
+				</plugin>
+
+				<!-- Ejecutar un main desde terminal:
+				       mvn compile exec:java -Dexec.mainClass="..." -Dexec.args="..." -->
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>exec-maven-plugin</artifactId>
+					<version>${exec.plugin.version}</version>
+				</plugin>
+
+			</plugins>
+		</pluginManagement>
+
+		<plugins>
 
 			<!-- Pruebas: salida limpia en terminal + reintento contra flaky -->
 			<plugin>
@@ -161,14 +194,6 @@
 						</goals>
 					</execution>
 				</executions>
-			</plugin>
-
-			<!-- Ejecutar un main desde terminal:
-			       mvn compile exec:java -Dexec.mainClass="..." -Dexec.args="..." -->
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>exec-maven-plugin</artifactId>
-				<version>${exec.plugin.version}</version>
 			</plugin>
 
 		</plugins>
