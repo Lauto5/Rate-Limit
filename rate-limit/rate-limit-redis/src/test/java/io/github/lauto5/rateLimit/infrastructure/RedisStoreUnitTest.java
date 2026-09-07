@@ -3,6 +3,7 @@ package io.github.lauto5.rateLimit.infrastructure;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -110,6 +111,30 @@ public class RedisStoreUnitTest {
 		// Assert
 		assertEquals(1, allowedCount.get(),
 				"Con un limite de 1, exactamente 1 request concurrente debe ser ALLOWED");
+
+	}
+
+	@Test
+	void corruptedStoredStateShouldBeResetAndRewritten() {
+
+		// Arrange - pre-cargamos basura que no sigue el formato versionado
+		String identifier = "corrupted-user-" + System.nanoTime();
+		byte[] garbage = "not-a-valid-versioned-state".getBytes(StandardCharsets.UTF_8);
+		fakeKeyValueStore.putRaw(identifier, garbage);
+
+		FixedWindowAlgorithmImpl algorithm = new FixedWindowAlgorithmImpl();
+		FixedWindowPolicy policy = new FixedWindowPolicy(5, Duration.ofMinutes(1));
+		AlgorithmContext context = new AlgorithmContext(Instant.now());
+
+		RateLimitAtomicOperation<?, ?> operation =
+				new RateLimitAtomicOperation<>(algorithm, policy, context);
+
+		// Act
+		AtomicOperationResult<?> result = redisStore.executeAtomically(identifier, operation);
+
+		// Assert - el estado corrupto se trata como inexistente y se reescribe limpio
+		assertTrue(result.getAlgorithmResult().isAllowed());
+		assertTrue(fakeKeyValueStore.exists(identifier));
 
 	}
 

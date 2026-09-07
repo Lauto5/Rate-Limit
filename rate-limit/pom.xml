@@ -30,6 +30,7 @@
 		<testcontainers.version>1.19.8</testcontainers.version>
 		<junit.jupiter.version>5.10.2</junit.jupiter.version>
 		<lettuce.version>6.3.2.RELEASE</lettuce.version>
+		<commons.pool2.version>2.12.0</commons.pool2.version>
 		<slf4j.version>2.0.18</slf4j.version>
 
 		<!-- Versiones de plugins -->
@@ -69,6 +70,13 @@
 				<groupId>io.lettuce</groupId>
 				<artifactId>lettuce-core</artifactId>
 				<version>${lettuce.version}</version>
+			</dependency>
+
+			<!-- Pooling de conexiones Redis -->
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-pool2</artifactId>
+				<version>${commons.pool2.version}</version>
 			</dependency>
 
 			<!-- Testcontainers Core -->

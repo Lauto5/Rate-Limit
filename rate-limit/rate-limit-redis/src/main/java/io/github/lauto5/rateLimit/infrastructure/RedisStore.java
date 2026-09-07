@@ -2,31 +2,45 @@ package io.github.lauto5.rateLimit.infrastructure;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.ThreadLocalRandom;
 
+import io.github.lauto5.rateLimit.application.CorruptedStateException;
+import io.github.lauto5.rateLimit.application.VersionedStateCodec;
 import io.github.lauto5.rateLimit.application.ports.out.AtomicOperation;
 import io.github.lauto5.rateLimit.application.ports.out.AtomicOperationResult;
-import io.github.lauto5.rateLimit.infrastructure.KeyValueStorePort;
 import io.github.lauto5.rateLimit.application.ports.out.Logger;
-import io.github.lauto5.rateLimit.logging.NoOpLogger;
 import io.github.lauto5.rateLimit.application.ports.out.RateLimitStore;
 import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
 import io.github.lauto5.rateLimit.application.ports.out.StoreState;
 import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
+import io.github.lauto5.rateLimit.logging.NoOpLogger;
 
-public class RedisStore implements RateLimitStore , AutoCloseable{
+/**
+ * {@link RateLimitStore} backed by a Redis key holding the serialized algorithm state.
+ *
+ * <p>La atomicidad se consigue con el protocolo <code>WATCH / MULTI / EXEC</code>: se observa
+ * la key, se lee su estado, la {@link AtomicOperation} calcula el nuevo estado en Java, y el
+ * {@link RedisTransactionPort#tryCommit} escribe con {@code MULTI/SET/EXEC}. Si otro proceso
+ * modifico la key observada, {@code EXEC} aborta y el ciclo se reintenta con el estado mas
+ * reciente hasta {@link #MAX_RETRIES} intentos.
+ *
+ * <p>El estado se serializa con {@link VersionedStateCodec}; los datos corruptos o de una
+ * version incompatible se tratan como estado inexistente (con warning) en lugar de fallar.
+ */
+public class RedisStore implements RateLimitStore, AutoCloseable {
 
 	private static final int MAX_RETRIES = 10;
 
 	private static final long MIN_TTL_MILLIS = 1L;
 
-	private final KeyValueStorePort keyValueStore;
+	private final RedisTransactionPort keyValueStore;
 	private final Logger logger;
 
-	public RedisStore(KeyValueStorePort keyValueStore) {
+	public RedisStore(RedisTransactionPort keyValueStore) {
 		this(keyValueStore, NoOpLogger.getInstance());
 	}
 
-	public RedisStore(KeyValueStorePort keyValueStore, Logger logger) {
+	public RedisStore(RedisTransactionPort keyValueStore, Logger logger) {
 		super();
 		this.keyValueStore = keyValueStore;
 		this.logger = logger;
@@ -36,37 +50,49 @@ public class RedisStore implements RateLimitStore , AutoCloseable{
 	public <S extends AlgorithmState> AtomicOperationResult<S> executeAtomically(String identifier,
 			AtomicOperation<S> operation) {
 
-		StateCodec<S> codec = operation.getCodec();
+		StateCodec<S> wireCodec = new VersionedStateCodec<>(operation.getCodec());
 
 		/*
-		 * 1 :
-		 *
-		 * Reintentamos hasta MAX_RETRIES veces si el CAS falla
-		 * por una escritura concurrente de otro proceso/hilo.
+		 * La cantidad de reintentos queda acotada por MAX_RETRIES. El valor se valida con los
+		 * tests de concurrencia del adapter; si la contencion es tan alta que se agota, se
+		 * aborta la operacion en lugar de degradar indefinidamente.
 		 */
 
-		for (int attempt = 0; attempt < MAX_RETRIES; attempt++) {
+		TransactionBody<AtomicOperationResult<S>> body = currentBytes -> {
 
-			byte[] currentBytes = keyValueStore.get(identifier);
-
-			StoreState<S> currentStoreState = toStoreState(currentBytes, codec);
+			StoreState<S> currentStoreState = toStoreState(currentBytes, wireCodec, identifier);
 
 			AtomicOperationResult<S> result = operation.apply(currentStoreState);
 
-			byte[] newBytes = codec.encode(result.getState());
+			byte[] newBytes = wireCodec.encode(result.getState());
 
 			long ttlMillis = calculateTtlMillis(operation.getNow(), result.getExpiresAt());
 
-			boolean applied = keyValueStore.compareAndSwap(identifier, currentBytes, newBytes, ttlMillis);
+			return new TransactionWrite<>(newBytes, ttlMillis, result);
+		};
 
-			if (applied) {
+		for (int attempt = 0; attempt < MAX_RETRIES; attempt++) {
+
+			AtomicOperationResult<S> result = keyValueStore.executeTransaction(identifier, body);
+
+			if (result != null) {
+				long ttlMillis = calculateTtlMillis(operation.getNow(), result.getExpiresAt());
 				logger.debug("Atomic update applied for identifier '" + identifier
 						+ "' with TTL " + ttlMillis + "ms");
 				return result;
 			}
 
-			logger.debug("Compare-and-swap collision for identifier '" + identifier
+			logger.debug("WATCH/MULTI/EXEC conflict for identifier '" + identifier
 					+ "' on attempt " + (attempt + 1) + "; retrying");
+
+			/*
+			 * Backoff exponencial con jitter completo (0..2^intento, tope 16ms) para
+			 * desincronizar los reintentos bajo contencion alta: sin la espera, todos los
+			 * contendientes vuelven a mirar a la vez y pueden starvearse mutuamente (livelock).
+			 */
+			if (attempt < MAX_RETRIES - 1) {
+				backoffBeforeRetry(attempt);
+			}
 
 		}
 
@@ -77,15 +103,22 @@ public class RedisStore implements RateLimitStore , AutoCloseable{
 
 	}
 
-	private <S extends AlgorithmState> StoreState<S> toStoreState(byte[] currentBytes, StateCodec<S> codec) {
+	private <S extends AlgorithmState> StoreState<S> toStoreState(byte[] currentBytes, StateCodec<S> codec,
+			String identifier) {
 
 		if (currentBytes == null) {
 			return null;
 		}
 
-		S decodedState = codec.decode(currentBytes);
+		try {
+			S decodedState = codec.decode(currentBytes);
+			return new StoreState<>(decodedState, Instant.EPOCH);
+		} catch (CorruptedStateException e) {
+			logger.warn("Estado corrupto o de formato incompatible para '" + identifier
+					+ "'; se reescribe desde cero: " + e.getMessage());
+			return null;
+		}
 
-		return new StoreState<>(decodedState, Instant.EPOCH);
 	}
 
 	private long calculateTtlMillis(Instant now, Instant expiresAt) {
@@ -95,7 +128,22 @@ public class RedisStore implements RateLimitStore , AutoCloseable{
 		return Math.max(ttlMillis, MIN_TTL_MILLIS);
 	}
 
+	private void backoffBeforeRetry(int attempt) {
 
+		long maxMillis = Math.min(1L << attempt, 16L);
+		long sleepMillis = ThreadLocalRandom.current().nextLong(0L, maxMillis + 1L);
+
+		if (sleepMillis == 0L) {
+			return;
+		}
+
+		try {
+			Thread.sleep(sleepMillis);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IllegalStateException("Reintento interrumpido", e);
+		}
+	}
 
 	@Override
 	public void close() throws Exception {

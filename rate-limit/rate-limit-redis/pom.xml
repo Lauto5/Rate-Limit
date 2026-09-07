@@ -25,6 +25,12 @@
 			<artifactId>lettuce-core</artifactId>
 		</dependency>
 
+		<!-- Pooling de conexiones para transacciones exclusivas por hilo (requerido por Lettuce) -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-pool2</artifactId>
+		</dependency>
+
 		<!-- SLF4J API (requerido por Lettuce) -->
 		<dependency>
 			<groupId>org.slf4j</groupId>

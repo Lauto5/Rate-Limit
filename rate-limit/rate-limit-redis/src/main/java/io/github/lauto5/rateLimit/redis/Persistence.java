@@ -2,7 +2,7 @@ package io.github.lauto5.rateLimit.redis;
 
 import io.github.lauto5.rateLimit.application.ports.out.Logger;
 import io.github.lauto5.rateLimit.application.ports.out.RateLimitStore;
-import io.github.lauto5.rateLimit.infrastructure.LettuceKeyValueStore;
+import io.github.lauto5.rateLimit.infrastructure.LettuceTransactionPort;
 import io.github.lauto5.rateLimit.infrastructure.RedisStore;
 import io.github.lauto5.rateLimit.logging.NoOpLogger;
 
@@ -19,12 +19,12 @@ public class Persistence {
 	/**
 	 * Returns a new Redis-backed store connected to the given URL.
 	 *
-	 * <p>The returned store uses a compare-and-swap protocol with atomic retries to provide
-	 * consistency across processes sharing the same Redis instance. It should be closed (via
-	 * {@link AutoCloseable#close}) when no longer needed.
+	 * <p>The returned store uses a {@code WATCH / MULTI / EXEC} protocol with atomic retries to
+	 * provide consistency across processes sharing the same Redis instance. It should be closed
+	 * (via {@link AutoCloseable#close}) when no longer needed.
 	 *
 	 * @param url the Redis connection URL (for example {@code redis://localhost:6379})
-	 * @return a {@link RedisStore} backed by {@link LettuceKeyValueStore}
+	 * @return a {@link RedisStore} backed by {@link LettuceTransactionPort}
 	 */
 	public static RateLimitStore inRedis(String url) {
 		return inRedis(url, NoOpLogger.getInstance());
@@ -33,15 +33,15 @@ public class Persistence {
 	/**
 	 * Returns a new Redis-backed store connected to the given URL, wired with the given logger.
 	 *
-	 * <p>The returned store uses a compare-and-swap protocol with atomic retries to provide
-	 * consistency across processes sharing the same Redis instance. It should be closed (via
-	 * {@link AutoCloseable#close}) when no longer needed.
+	 * <p>The returned store uses a {@code WATCH / MULTI / EXEC} protocol with atomic retries to
+	 * provide consistency across processes sharing the same Redis instance. It should be closed
+	 * (via {@link AutoCloseable#close}) when no longer needed.
 	 *
 	 * @param url    the Redis connection URL (for example {@code redis://localhost:6379})
 	 * @param logger the logger used to emit diagnostic output for store operations
-	 * @return a {@link RedisStore} backed by {@link LettuceKeyValueStore}
+	 * @return a {@link RedisStore} backed by {@link LettuceTransactionPort}
 	 */
 	public static RateLimitStore inRedis(String url, Logger logger) {
-		return new RedisStore(new LettuceKeyValueStore(url), logger);
+		return new RedisStore(new LettuceTransactionPort(url), logger);
 	}
 }

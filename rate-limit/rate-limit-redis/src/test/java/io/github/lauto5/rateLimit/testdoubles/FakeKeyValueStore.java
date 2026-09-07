@@ -3,113 +3,121 @@ package io.github.lauto5.rateLimit.testdoubles;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
-import io.github.lauto5.rateLimit.infrastructure.KeyValueStorePort;
+import io.github.lauto5.rateLimit.infrastructure.RedisTransactionPort;
+import io.github.lauto5.rateLimit.infrastructure.TransactionBody;
+import io.github.lauto5.rateLimit.infrastructure.TransactionWrite;
 
 /**
- * Implementación fake/in-memory de KeyValueStorePort para pruebas unitarias.
- * Simula el comportamiento de un almacén clave-valor con operaciones CAS y TTL.
+ * Implementación fake/in-memory de {@link RedisTransactionPort} para pruebas unitarias.
+ *
+ * <p>Simula la atomicidad de WATCH/MULTI/EXEC: el {@link TransactionBody} se ejecuta dentro de
+ * un {@code compute} atomico por clave, de modo que dos hilos nunca observan el mismo estado
+ * obsoleto y pierden actualizaciones, igual que con el protocolo real.
  */
-public final class FakeKeyValueStore implements KeyValueStorePort {
+public final class FakeKeyValueStore implements RedisTransactionPort {
 
-    private final Map<String, byte[]> store = new ConcurrentHashMap<>();
-    private final Map<String, Long> expirations = new ConcurrentHashMap<>();
-    private final AtomicLong currentTime = new AtomicLong(System.currentTimeMillis());
+	private final Map<String, byte[]> store = new ConcurrentHashMap<>();
+	private final Map<String, Long> expirations = new ConcurrentHashMap<>();
+	private final AtomicLong currentTime = new AtomicLong(System.currentTimeMillis());
 
-    @Override
-    public byte[] get(String identifier) {
-        cleanup();
-        return store.get(identifier);
-    }
+	@Override
+	public <T> T executeTransaction(String key, TransactionBody<T> body) {
+		cleanup();
 
-    @Override
-    public boolean compareAndSwap(String identifier, byte[] expectedValue, byte[] newValue, long ttlMillis) {
-        cleanup();
+		AtomicReference<T> produced = new AtomicReference<>();
 
-        AtomicBoolean swapped = new AtomicBoolean(false);
+		store.compute(key, (identifier, current) -> {
 
-        store.compute(identifier, (key, current) -> {
+			TransactionWrite<T> write = body.apply(current);
 
-            boolean expectedExists = (expectedValue != null);
-            boolean currentExists = (current != null);
+			if (write == null) {
+				return current;
+			}
 
-            // Las condiciones de existencia deben coincidir
-            if (expectedExists != currentExists) {
-                return current;
-            }
+			produced.set(write.getResult());
+			expirations.put(identifier, currentTime.get() + write.getTtlMillis());
+			return write.getNewValue();
+		});
 
-            if (expectedExists && !Arrays.equals(current, expectedValue)) {
-                return current;
-            }
+		return produced.get();
+	}
 
-            swapped.set(true);
-            expirations.put(identifier, currentTime.get() + ttlMillis);
-            return newValue;
-        });
+	/**
+	 * Avanza el tiempo virtual, útil para pruebas de expiración.
+	 */
+	public void advanceTime(long millis) {
+		currentTime.addAndGet(millis);
+		cleanup();
+	}
 
-        return swapped.get();
-    }
+	/**
+	 * Limpia todas las entradas del almacenamiento.
+	 */
+	public void clear() {
+		store.clear();
+		expirations.clear();
+	}
 
-    /**
-     * Avanza el tiempo virtual, útil para pruebas de expiración.
-     */
-    public void advanceTime(long millis) {
-        currentTime.addAndGet(millis);
-        cleanup();
-    }
+	/**
+	 * Verifica si una clave existe y no ha expirado.
+	 */
+	public boolean exists(String identifier) {
+		cleanup();
+		return store.containsKey(identifier);
+	}
 
-    /**
-     * Limpia todas las entradas del almacenamiento.
-     */
-    public void clear() {
-        store.clear();
-        expirations.clear();
-    }
+	/**
+	 * Obtiene el TTL restante en milisegundos para una clave.
+	 * Retorna null si la clave no existe o ya expiró.
+	 */
+	public Long getRemainingTtl(String identifier) {
+		cleanup();
+		Long expiry = expirations.get(identifier);
+		if (expiry == null) {
+			return null;
+		}
+		long remaining = expiry - currentTime.get();
+		return remaining > 0 ? remaining : null;
+	}
 
-    /**
-     * Verifica si una clave existe y no ha expirado.
-     */
-    public boolean exists(String identifier) {
-        cleanup();
-        return store.containsKey(identifier);
-    }
+	/**
+	 * Obtiene el valor sin verificar expiración (para debugging).
+	 */
+	public byte[] getRaw(String identifier) {
+		return store.get(identifier);
+	}
 
-    /**
-     * Obtiene el TTL restante en milisegundos para una clave.
-     * Retorna null si la clave no existe o ya expiró.
-     */
-    public Long getRemainingTtl(String identifier) {
-        cleanup();
-        Long expiry = expirations.get(identifier);
-        if (expiry == null) {
-            return null;
-        }
-        long remaining = expiry - currentTime.get();
-        return remaining > 0 ? remaining : null;
-    }
+	/**
+	 * Escribe directamente un valor, útil para pre-cargar datos (por ejemplo, estados
+	 * corruptos) sin pasar por la semántica transaccional.
+	 */
+	public void putRaw(String identifier, byte[] value) {
+		expirations.remove(identifier);
+		store.put(identifier, Arrays.copyOf(value, value.length));
+	}
 
-    /**
-     * Obtiene el valor sin verificar expiración (para debugging).
-     */
-    public byte[] getRaw(String identifier) {
-        return store.get(identifier);
-    }
+	private void cleanup() {
+		long now = currentTime.get();
+		expirations.entrySet().removeIf(entry -> {
+			if (now > entry.getValue()) {
+				store.remove(entry.getKey());
+				return true;
+			}
+			return false;
+		});
+	}
 
-    private void cleanup() {
-        long now = currentTime.get();
-        expirations.entrySet().removeIf(entry -> {
-            if (now > entry.getValue()) {
-                store.remove(entry.getKey());
-                return true;
-            }
-            return false;
-        });
-    }
+	@Override
+	public byte[] get(String identifier) {
+		cleanup();
+		return store.get(identifier);
+	}
 
-    @Override
-    public void close() {
-        clear();
-    }
+	@Override
+	public void close() {
+		clear();
+	}
 }
