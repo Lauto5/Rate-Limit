@@ -553,14 +553,14 @@ public class FixedWindowAlgorithmImplUnitTest {
 			FixedWindowState state = stateWith(0, fixedNow);
 			AlgorithmContext context = contextAt(fixedNow);
 
-			// Act & Assert - Hacer 5 peticiones permitidas
+			// Act & Assert - Make 5 allowed requests
 			for (int i = 1; i <= 5; i++) {
 				AlgorithmResult<FixedWindowState> result = executeAlgorithm(state, context);
 				assertTrue(result.isAllowed(), "Request " + i + " should be allowed");
 				state = result.getState();
 			}
 
-			// Request 6 - Debe ser denegada
+			// Request 6 - must be denied
 			AlgorithmResult<FixedWindowState> deniedResult = executeAlgorithm(state, context);
 			assertFalse(deniedResult.isAllowed(), "Request 6 should be denied");
 

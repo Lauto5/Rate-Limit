@@ -21,7 +21,7 @@ public final class RateLimitResult {
 	
 	private final long remaining;
 	
-	private final Optional<Duration> retryAfter;
+	private final Duration retryAfter;
 	
 	private final Instant resetAt;
 	
@@ -36,7 +36,7 @@ public final class RateLimitResult {
 	public RateLimitResult(boolean allowed, long remaining, Duration retryAfter, Instant resetAt) {
 		this.allowed = allowed;
 		this.remaining = remaining;
-		this.retryAfter = Optional.ofNullable(retryAfter);
+		this.retryAfter = retryAfter;
 		this.resetAt = resetAt;
 	}
 	
@@ -48,15 +48,15 @@ public final class RateLimitResult {
 	 * @return an allowed {@code RateLimitResult}
 	 */
 	public static RateLimitResult allowed(
-	        long remaining,
-	        Instant resetAt) {
+			long remaining,
+			Instant resetAt) {
 
-	    return new RateLimitResult(
-	            true,
-	            remaining,
-	            null,
-	            resetAt
-	    );
+		return new RateLimitResult(
+				true,
+				remaining,
+				null,
+				resetAt
+		);
 	}
 	
 	/**
@@ -67,15 +67,15 @@ public final class RateLimitResult {
 	 * @return a denied {@code RateLimitResult}
 	 */
 	public static RateLimitResult denied(
-	        Duration retryAfter,
-	        Instant resetAt) {
+			Duration retryAfter,
+			Instant resetAt) {
 
-	    return new RateLimitResult(
-	            false,
-	            0,
-	            retryAfter,
-	            resetAt
-	    );
+		return new RateLimitResult(
+				false,
+				0,
+				retryAfter,
+				resetAt
+		);
 	}
 
 	/**
@@ -97,7 +97,7 @@ public final class RateLimitResult {
 	 *         denied, or empty when it was allowed
 	 */
 	public Optional<Duration> getRetryAfter() {
-		return retryAfter;
+		return Optional.ofNullable(retryAfter);
 	}
 
 	/**

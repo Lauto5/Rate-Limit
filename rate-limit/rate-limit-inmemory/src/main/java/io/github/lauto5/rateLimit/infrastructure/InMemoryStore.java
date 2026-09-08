@@ -21,7 +21,7 @@ import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
  */
 public class InMemoryStore implements RateLimitStore {
 
-	private ConcurrentHashMap<String, StoreState<?>> store = new ConcurrentHashMap<String, StoreState<?>>();
+	private final ConcurrentHashMap<String, StoreState<?>> store = new ConcurrentHashMap<String, StoreState<?>>();
 
 	private final Logger logger;
 
@@ -31,6 +31,11 @@ public class InMemoryStore implements RateLimitStore {
 
 	public InMemoryStore(Logger logger) {
 		super();
+
+		if (logger == null) {
+			throw new IllegalArgumentException("Logger cannot be null");
+		}
+
 		this.logger = logger;
 	}
 

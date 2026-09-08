@@ -1,5 +1,7 @@
 package io.github.lauto5.rateLimit.domain.algorithmState;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -8,17 +10,16 @@ import java.util.List;
  * <p>Holds the timestamps of the requests, in epoch milliseconds, that fall within the current
  * sliding window.
  */
-public class SlidingWindowLogState implements AlgorithmState {
+public final class SlidingWindowLogState implements AlgorithmState {
 
 	private final List<Long> timestamps;
 
 	public SlidingWindowLogState(List<Long> timestamps) {
-		super();
-		this.timestamps = timestamps;
+		this.timestamps = new ArrayList<>(timestamps);
 	}
 
 	public List<Long> getTimestamps() {
-		return timestamps;
+		return Collections.unmodifiableList(timestamps);
 	}
-	
+
 }

@@ -19,6 +19,6 @@ public interface RateLimitStore {
 	 * @param <S>        the concrete algorithm state type
 	 * @return the result of the atomic operation
 	 */
-	public <S extends AlgorithmState> AtomicOperationResult<S> executeAtomically(String identifier , AtomicOperation<S> operation);
-	
+	public <S extends AlgorithmState> AtomicOperationResult<S> executeAtomically(String identifier, AtomicOperation<S> operation);
+
 }

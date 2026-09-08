@@ -15,8 +15,38 @@ public final class GcraPolicy implements RateLimitPolicy {
 	
 	public GcraPolicy(double rate, Duration burst) {
 		super();
+
+		validateRate(rate);
+		validateBurst(burst);
+
 		this.rate = rate;
 		this.burst = burst;
+	}
+
+	private void validateRate(double rate) {
+
+		if (Double.isNaN(rate)) {
+			throw new IllegalArgumentException("Rate cannot be NaN");
+		}
+
+		if (Double.isInfinite(rate)) {
+			throw new IllegalArgumentException("Rate must be finite, got: " + rate);
+		}
+
+		if (rate <= 0) {
+			throw new IllegalArgumentException("Rate must be greater than 0, got: " + rate);
+		}
+	}
+
+	private void validateBurst(Duration burst) {
+
+		if (burst == null) {
+			throw new IllegalArgumentException("Burst cannot be null");
+		}
+
+		if (burst.isNegative()) {
+			throw new IllegalArgumentException("Burst cannot be negative, got: " + burst);
+		}
 	}
 	
 	public double getRate() {

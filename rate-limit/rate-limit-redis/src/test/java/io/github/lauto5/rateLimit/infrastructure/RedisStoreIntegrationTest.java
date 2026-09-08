@@ -100,7 +100,7 @@ public class RedisStoreIntegrationTest {
 		// Assert
 		assertTrue(result.getAlgorithmResult().isAllowed());
 
-		// Verificamos que realmente quedo en Redis, no solo en el resultado en memoria
+		// Verify it really stayed in Redis, not only in the in-memory result
 		byte[] rawStored = keyValueStore.get(NS + identifier);
 		FixedWindowState decoded = wireCodec(algorithm.getCodec()).decode(rawStored);
 
@@ -132,9 +132,9 @@ public class RedisStoreIntegrationTest {
 	void shouldPersistStateAcrossStoreInstances() throws Exception {
 
 		// Arrange
-		// Verifica que el estado vive en Redis, no en memoria del proceso:
-		// una instancia totalmente nueva del adapter/RedisStore apuntando al
-		// mismo Redis debe ver el estado dejado por la primera.
+		// Verifies the state lives in Redis, not in the process memory:
+		// a completely new adapter/RedisStore instance pointing to the
+		// same Redis must see the state left by the first one.
 		FixedWindowAlgorithmImpl algorithm = new FixedWindowAlgorithmImpl();
 		FixedWindowPolicy policy = new FixedWindowPolicy(5, Duration.ofMinutes(1));
 		String identifier = uniqueIdentifier();
@@ -162,9 +162,9 @@ public class RedisStoreIntegrationTest {
 	void shouldRespectLimitUnderConcurrency() throws Exception {
 
 		// Arrange
-		// Limite de 1: si el WATCH/MULTI/EXEC no funcionara (GET/SET plano sin
-		// atomicidad), varios threads podrian leer count=0 al mismo tiempo y
-		// todos ser permitidos. Con la transaccion, solo UNO debe ganar.
+		// Limit of 1: if WATCH/MULTI/EXEC did not work (plain GET/SET without
+		// atomicity), several threads could read count=0 at the same time and
+		// all be allowed. With the transaction, only ONE must win.
 
 		int threadCount = 20;
 
@@ -177,7 +177,7 @@ public class RedisStoreIntegrationTest {
 
 		Callable<Boolean> task = () -> {
 
-			barrier.await(); // todos los threads disparan lo mas cerca posible entre si
+			barrier.await(); // all threads fire as close to each other as possible
 
 			AtomicOperationResult<FixedWindowState> result =
 					redisStore.executeAtomically(identifier, operationWith(algorithm, policy, Instant.now()));
@@ -207,9 +207,9 @@ public class RedisStoreIntegrationTest {
 	void shouldHandleDifferentIdentifiersConcurrently() throws Exception {
 
 		// Arrange
-		// Distintos identifiers no deben interferir entre si: cada uno tiene su
-		// propia key en Redis, por lo tanto no deberian competir por la misma
-		// transaccion ni bloquearse entre si.
+		// Different identifiers must not interfere with each other: each one has its
+		// own key in Redis, therefore they should not compete for the same
+		// transaction nor block each other.
 
 		int identifierCount = 10;
 
@@ -244,9 +244,9 @@ public class RedisStoreIntegrationTest {
 		long allowedCount = countAllowed(futures);
 
 		// Assert
-		// Como cada identifier tiene limite=1 y son independientes entre si,
-		// TODOS deberian ser permitidos (a diferencia del test anterior,
-		// donde comparten identifier y compiten por el mismo limite).
+		// Since each identifier has limit=1 and they are independent of each other,
+		// ALL should be allowed (unlike the previous test,
+		// where they share the identifier and compete for the same limit).
 		assertEquals(identifierCount, allowedCount,
 				"Identifiers distintos no deberian competir por el mismo limite");
 
@@ -257,7 +257,7 @@ public class RedisStoreIntegrationTest {
 
 		// Arrange
 		FixedWindowAlgorithmImpl algorithm = new FixedWindowAlgorithmImpl();
-		FixedWindowPolicy policy = new FixedWindowPolicy(1, Duration.ofSeconds(1)); // ventana minima permitida
+		FixedWindowPolicy policy = new FixedWindowPolicy(1, Duration.ofSeconds(1)); // minimum allowed window
 		String identifier = uniqueIdentifier();
 
 		AtomicOperationResult<FixedWindowState> firstResult =
@@ -270,7 +270,7 @@ public class RedisStoreIntegrationTest {
 
 		assertTrue(!deniedResult.getAlgorithmResult().isAllowed(), "La segunda request dentro de la misma ventana debe ser denegada");
 
-		// Act - esperamos a que la ventana (y el TTL en Redis) expiren
+		// Act - wait for the window (and the TTL in Redis) to expire
 		Thread.sleep(1_200L);
 
 		AtomicOperationResult<FixedWindowState> afterExpiryResult =
@@ -285,7 +285,7 @@ public class RedisStoreIntegrationTest {
 	@Test
 	void corruptedStoredStateShouldBeResetInRedis() {
 
-		// Arrange - pre-cargamos un valor que no sigue el formato versionado
+		// Arrange - pre-load a value that does not follow the versioned format
 		String identifier = uniqueIdentifier();
 		byte[] garbage = "legacy-raw-state".getBytes(java.nio.charset.StandardCharsets.UTF_8);
 		keyValueStore.executeTransaction(NS + identifier,
@@ -294,11 +294,11 @@ public class RedisStoreIntegrationTest {
 		FixedWindowAlgorithmImpl algorithm = new FixedWindowAlgorithmImpl();
 		FixedWindowPolicy policy = new FixedWindowPolicy(5, Duration.ofMinutes(1));
 
-		// Act - un update debe tratar el estado corrupto como inexistente
+		// Act - an update must treat the corrupted state as missing
 		AtomicOperationResult<FixedWindowState> result =
 				redisStore.executeAtomically(identifier, operationWith(algorithm, policy, Instant.now()));
 
-		// Assert - el estado se reescribio en formato versionado valido
+		// Assert - the state was rewritten in valid versioned format
 		assertTrue(result.getAlgorithmResult().isAllowed());
 		FixedWindowState decoded = wireCodec(algorithm.getCodec()).decode(keyValueStore.get(NS + identifier));
 		assertEquals(1, decoded.getCount());

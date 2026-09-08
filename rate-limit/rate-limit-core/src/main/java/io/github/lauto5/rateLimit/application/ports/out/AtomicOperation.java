@@ -13,7 +13,7 @@ import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
  *
  * @param <S> the concrete algorithm state type
  */
-public interface AtomicOperation <S extends AlgorithmState>{
+public interface AtomicOperation<S extends AlgorithmState> {
 
 	/**
 	 * Applies the operation against the currently stored state and produces the result.
@@ -26,10 +26,10 @@ public interface AtomicOperation <S extends AlgorithmState>{
 	/**
 	 * @return the current instant used as the reference time for this operation
 	 */
-    public Instant getNow();
-    
-    /**
-     * @return the codec used to encode and decode instances of the state {@code S}
-     */
-    public StateCodec<S> getCodec();
+	public Instant getNow();
+	
+	/**
+	 * @return the codec used to encode and decode instances of the state {@code S}
+	 */
+	public StateCodec<S> getCodec();
 }

@@ -21,7 +21,7 @@ import io.github.lauto5.rateLimit.domain.policies.SlidingWindowLogPolicy;
  * timestamp of the request is then recorded. State is serialized as a UTF-8 string containing
  * the list of request timestamps in epoch milliseconds.
  */
-public class SlidingWindowLogAlgorithmImpl implements SlidingWindowLogAlgorithm {
+public final class SlidingWindowLogAlgorithmImpl implements SlidingWindowLogAlgorithm {
 
 	private static final StateCodec<SlidingWindowLogState> CODEC = new StateCodec<SlidingWindowLogState>() {
 

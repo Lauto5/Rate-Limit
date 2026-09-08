@@ -18,7 +18,7 @@ import io.github.lauto5.rateLimit.domain.policies.TokenBucketPolicy;
  * and consumes one token. State is serialized as a UTF-8 string containing the token count and
  * the last refill instant.
  */
-public class TokenBucketAlgorithmImpl implements TokenBucketAlgorithm {
+public final class TokenBucketAlgorithmImpl implements TokenBucketAlgorithm {
 
 
 	private static final StateCodec<TokenBucketState> CODEC = new StateCodec<TokenBucketState>() {

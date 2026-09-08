@@ -106,7 +106,7 @@ public final class RateLimitAtomicOperation<S extends AlgorithmState, P extends 
 				+ (algorithmResult.getDecision().isAllowed() ? "allowed" : "denied")
 				+ " - state expires at " + expiresAt);
 
-		return new AtomicOperationResult<>(expiresAt , algorithmResult);
+		return new AtomicOperationResult<>(expiresAt, algorithmResult);
 	}
 
 	/**

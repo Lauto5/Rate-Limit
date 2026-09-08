@@ -15,9 +15,9 @@ public class AlgorithmContext {
 	public AlgorithmContext(Instant now) {
 		super();
 		
-        if (now == null) {
-            throw new IllegalArgumentException("Now cannot be null");
-        }
+		if (now == null) {
+			throw new IllegalArgumentException("Now cannot be null");
+		}
 		
 		this.now = now;
 	}

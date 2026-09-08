@@ -66,7 +66,7 @@ public class StoreContractTest {
 	}
 
 	/**
-	 * Ejecta la misma secuencia contra un store dado y devuelve las decisiones tomadas.
+	 * Runs the same sequence against a given store and returns the decisions taken.
 	 */
 	private List<Boolean> runFixedWindowSequence(RateLimitStore store) {
 
@@ -78,14 +78,14 @@ public class StoreContractTest {
 
 		List<Boolean> decisions = new ArrayList<>();
 
-		// Ventana 1 (t): 5 requests contra un limite de 3
+		// Window 1 (t): 5 requests against a limit of 3
 		for (int i = 0; i < 5; i++) {
 			RateLimitAtomicOperation<FixedWindowState, FixedWindowPolicy> op =
 					new RateLimitAtomicOperation<>(algorithm, policy, new AlgorithmContext(base));
 			decisions.add(store.executeAtomically(identifier, op).getAlgorithmResult().isAllowed());
 		}
 
-		// Ventana 2 (t + 2 min): la ventana reinicia, el contador vuelve a 1
+		// Window 2 (t + 2 min): the window resets, the counter returns to 1
 		RateLimitAtomicOperation<FixedWindowState, FixedWindowPolicy> next =
 				new RateLimitAtomicOperation<>(algorithm, policy,
 						new AlgorithmContext(base.plus(Duration.ofMinutes(2))));
@@ -101,8 +101,8 @@ public class StoreContractTest {
 		List<Boolean> inMemory = runFixedWindowSequence(new InMemoryStore());
 		List<Boolean> redis = runFixedWindowSequence(redisStore);
 
-		// Assert - ambos stores deben decidir igual sobre la misma secuencia,
-		// con el TTL de Redis sustituyendo el chequeo de expiracion del InMemoryStore
+		// Assert - both stores must decide the same on the same sequence,
+		// with the Redis TTL replacing the InMemoryStore expiry check
 		assertEquals(inMemory, redis,
 				"el store Redis debe emitir exactamente las mismas decisiones que el InMemoryStore");
 
@@ -122,7 +122,7 @@ public class StoreContractTest {
 		FixedWindowAlgorithmImpl algorithm = new FixedWindowAlgorithmImpl();
 		FixedWindowPolicy policy = new FixedWindowPolicy(limit, Duration.ofMinutes(1));
 
-		// Key compartida: todos operan sobre el mismo identifier y compiten por el mismo limite
+		// Shared key: all operators act on the same identifier and compete for the same limit
 		String identifier = "scale-" + UUID.randomUUID();
 
 		ExecutorService executor = Executors.newFixedThreadPool(100);
@@ -146,8 +146,8 @@ public class StoreContractTest {
 							denied.incrementAndGet();
 						}
 					} catch (IllegalStateException e) {
-						// Contestacion extrema por la key compartida: tras agotar los
-						// reintentos el store propaga el fallo. No cuenta como permiso.
+						// Extreme contention on the shared key: after exhausting the
+						// retries the store propagates the failure. It does not count as a permit.
 						errored.incrementAndGet();
 					}
 
@@ -155,10 +155,10 @@ public class StoreContractTest {
 				})
 				.collect(Collectors.toList());
 
-		// Act - sin gate de sincronizacion: solo 100 de las 1000 tareas pueden estar activas
-		// a la vez (pool fijo), una barrera con 1000 parties nunca se tripularia. La rafaga de
-		// submision y la retencion del lock del pool son suficientemente simultaneas para el
-		// objetivo: que 1000 operaciones compitan por UNA sola key.
+		// Act - no synchronization gate: only 100 of the 1000 tasks can be active
+		// at a time (fixed pool), a barrier with 1000 parties would never be released.
+		// The submission burst and the pool lock retention are simultaneous enough for
+		// the goal: 1000 operations contending for a SINGLE key.
 		List<Future<Void>> futures = tasks.stream()
 				.map(executor::submit)
 				.collect(Collectors.toList());
@@ -169,8 +169,8 @@ public class StoreContractTest {
 
 		executor.shutdown();
 
-		// Assert - la garantia principal: bajo alta concurrencia sobre UNA sola key,
-		// jamas se permite mas de `limit` requests dentro de una ventana
+		// Assert - the main guarantee: under high concurrency on a SINGLE key,
+		// more than `limit` requests are never allowed within a window
 		assertTrue(allowed.get() <= limit,
 				"con limite=" + limit + " y 1000 operaciones concurrentes, allowed debe ser <= 100 (fue "
 						+ allowed.get() + ")");

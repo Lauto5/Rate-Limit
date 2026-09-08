@@ -31,7 +31,7 @@ public class GcraAlgorithmImplUnitTest {
 	@BeforeEach
 	void setUp() {
 		algorithm = new GcraAlgorithmImpl();
-		standardPolicy = new GcraPolicy(1.0, Duration.ofSeconds(5)); // 1 req/seg, ráfaga de 5s
+		standardPolicy = new GcraPolicy(1.0, Duration.ofSeconds(5)); // 1 req/sec, 5s burst
 		fixedNow = Instant.parse("2026-01-01T10:00:00Z");
 	}
 
@@ -79,7 +79,7 @@ public class GcraAlgorithmImplUnitTest {
 		void firstRequestOnFreshStateShouldBeAllowed() {
 
 			// Arrange
-			GcraState initialState = stateWithTat(fixedNow); // tat == now -> balde "vacio"
+			GcraState initialState = stateWithTat(fixedNow); // tat == now -> "empty" bucket
 			AlgorithmContext context = contextAt(fixedNow);
 
 			// Act
@@ -101,8 +101,8 @@ public class GcraAlgorithmImplUnitTest {
 		void requestBeyondBurstToleranceShouldBeDenied() {
 
 			// Arrange
-			// tat 6s en el futuro; con tolerancia de 5s, "now" todavia
-			// esta 1s antes del instante minimo permitido.
+			// tat 6s in the future; with a 5s tolerance, "now" is still
+			// 1s before the minimum allowed instant.
 			GcraState initialState = stateWithTat(fixedNow.plusSeconds(6));
 			AlgorithmContext context = contextAt(fixedNow);
 
@@ -127,7 +127,7 @@ public class GcraAlgorithmImplUnitTest {
 		void requestExactlyAtAllowedInstantShouldBeAllowed() {
 
 			// Arrange
-			// allowAt = tat - tolerance = (now+5000) - 5000 = now exacto
+			// allowAt = tat - tolerance = (now+5000) - 5000 = exact now
 			GcraState initialState = stateWithTat(fixedNow.plusMillis(5000));
 			AlgorithmContext context = contextAt(fixedNow);
 
@@ -166,7 +166,7 @@ public class GcraAlgorithmImplUnitTest {
 		void remainingShouldBeZeroWhenToleranceFullyConsumed() {
 
 			// Arrange
-			// tat ya adelantado 5s (todo el margen de rafaga ya "reservado")
+			// tat already 5s ahead (all the burst margin already "reserved")
 			GcraState initialState = stateWithTat(fixedNow.plusSeconds(5));
 			AlgorithmContext context = contextAt(fixedNow);
 
@@ -204,9 +204,9 @@ public class GcraAlgorithmImplUnitTest {
 		void expiredTatShouldBeRebasedToCurrentTime() {
 
 			// Arrange
-			// Si el TAT quedo en el pasado (balde inactivo por mucho tiempo),
-			// el effectiveTat debe recalcularse a partir de "now", no del
-			// TAT viejo.
+			// If the TAT stayed in the past (bucket idle for a long time),
+			// the effectiveTat must be recomputed from "now", not from the
+			// stale TAT.
 			GcraState initialState = stateWithTat(fixedNow.minusSeconds(10));
 			AlgorithmContext context = contextAt(fixedNow);
 
@@ -246,7 +246,7 @@ public class GcraAlgorithmImplUnitTest {
 		void resetAtWhenDeniedShouldBeTheExactAllowedInstant() {
 
 			// Arrange
-			GcraState initialState = stateWithTat(fixedNow.plusSeconds(8)); // supera la tolerancia de 5s
+			GcraState initialState = stateWithTat(fixedNow.plusSeconds(8)); // exceeds the 5s tolerance
 			AlgorithmContext context = contextAt(fixedNow);
 			Instant expectedResetAt = fixedNow.plusSeconds(3); // allowAt = (now+8s) - 5s
 
@@ -339,7 +339,7 @@ public class GcraAlgorithmImplUnitTest {
 		void shouldRespectCustomRate() {
 
 			// Arrange
-			GcraPolicy customPolicy = policyWith(2.0, Duration.ofSeconds(5)); // 2 req/seg -> intervalo 500ms
+			GcraPolicy customPolicy = policyWith(2.0, Duration.ofSeconds(5)); // 2 req/sec -> 500ms interval
 			GcraState initialState = stateWithTat(fixedNow);
 			AlgorithmContext context = contextAt(fixedNow);
 
@@ -356,8 +356,8 @@ public class GcraAlgorithmImplUnitTest {
 		void shouldRespectCustomBurst() {
 
 			// Arrange
-			GcraPolicy customPolicy = policyWith(1.0, Duration.ofSeconds(2)); // rafaga chica
-			GcraState initialState = stateWithTat(fixedNow.plusSeconds(3)); // fuera de la tolerancia de 2s
+			GcraPolicy customPolicy = policyWith(1.0, Duration.ofSeconds(2)); // small burst
+			GcraState initialState = stateWithTat(fixedNow.plusSeconds(3)); // outside the 2s tolerance
 			AlgorithmContext context = contextAt(fixedNow);
 
 			// Act
@@ -373,8 +373,8 @@ public class GcraAlgorithmImplUnitTest {
 		void extremelyHighRateShouldClampEmissionIntervalToOneMillisecond() {
 
 			// Arrange
-			// 1000/10000 = 0.1ms -> redondea a 0 -> debe forzarse a 1ms
-			// para evitar division por cero al calcular "remaining".
+			// 1000/10000 = 0.1ms -> rounds to 0 -> must be clamped to 1ms
+			// to avoid division by zero when computing "remaining".
 			GcraPolicy extremePolicy = policyWith(10000.0, Duration.ofMillis(10));
 			GcraState initialState = stateWithTat(fixedNow);
 			AlgorithmContext context = contextAt(fixedNow);
@@ -398,11 +398,11 @@ public class GcraAlgorithmImplUnitTest {
 		void freshBucketShouldAllowBurstPlusOneBeforeDenying() {
 
 			// Arrange
-			// Documenta el comportamiento real: al arrancar con tat==now,
-			// la primera request es "gratis" y luego el margen de tolerancia
-			// (5000ms / 1000ms por request) permite 5 mas -> 6 en total.
+			// Documents the real behavior: starting from tat==now,
+			// the first request is "free" and then the tolerance margin
+			// (5000ms / 1000ms per request) allows 5 more -> 6 in total.
 			GcraState state = stateWithTat(fixedNow);
-			AlgorithmContext context = contextAt(fixedNow); // el reloj no avanza entre llamadas
+			AlgorithmContext context = contextAt(fixedNow); // the clock does not advance between calls
 
 			int[] expectedRemaining = { 4, 3, 2, 1, 0, 0 };
 
@@ -419,7 +419,7 @@ public class GcraAlgorithmImplUnitTest {
 
 			}
 
-			// La septima request ya debe ser denegada
+			// The seventh request must already be denied
 			AlgorithmResult<GcraState> deniedResult = executeAlgorithm(state, context);
 			assertFalse(deniedResult.isAllowed(), "7th request should be denied");
 
@@ -429,14 +429,14 @@ public class GcraAlgorithmImplUnitTest {
 		void shouldAllowAgainOnceEnoughTimeHasPassed() {
 
 			// Arrange
-			GcraState state = stateWithTat(fixedNow.plusSeconds(6)); // fuera de tolerancia
+			GcraState state = stateWithTat(fixedNow.plusSeconds(6)); // outside tolerance
 			AlgorithmContext deniedContext = contextAt(fixedNow);
 
 			AlgorithmResult<GcraState> deniedResult = executeAlgorithm(state, deniedContext);
 			DeniedDecision decision = extractDenied(deniedResult);
 			Duration retryAfter = decision.getRetryAfter();
 
-			// Act - Avanzamos exactamente lo que indico retryAfter
+			// Act - advance exactly what retryAfter indicated
 			AlgorithmContext retryContext = contextAt(fixedNow.plus(retryAfter));
 			AlgorithmResult<GcraState> retryResult = executeAlgorithm(state, retryContext);
 

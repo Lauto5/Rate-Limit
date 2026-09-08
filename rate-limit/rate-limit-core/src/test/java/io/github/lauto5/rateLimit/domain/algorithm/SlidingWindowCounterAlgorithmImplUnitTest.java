@@ -25,1124 +25,1124 @@ import io.github.lauto5.rateLimit.domain.policies.SlidingWindowCounterPolicy;
 
 public class SlidingWindowCounterAlgorithmImplUnitTest {
 
-    private SlidingWindowCounterAlgorithm algorithm;
-    private SlidingWindowCounterPolicy standardPolicy;
-    private Instant fixedNow;
-
-    @BeforeEach
-    void setUp() {
-        algorithm = new SlidingWindowCounterAlgorithmImpl();
-
-        standardPolicy =
-                new SlidingWindowCounterPolicy(
-                        5,
-                        Duration.ofMinutes(1),
-                        6
-                );
-
-        fixedNow =
-                Instant.parse("2026-01-01T10:00:00Z");
-    }
-
-    // ============================================================
-    // Helpers
-    // ============================================================
-
-    private AlgorithmContext contextAt(Instant instant) {
-        return new AlgorithmContext(instant);
-    }
-
-    private SlidingWindowCounterState stateWith(
-            Map<Long, Integer> windows) {
-
-        return new SlidingWindowCounterState(windows);
-    }
-
-    private SlidingWindowCounterPolicy policyWith(
-            int limit,
-            Duration windowSize,
-            int subWindows) {
-
-        return new SlidingWindowCounterPolicy(
-                limit,
-                windowSize,
-                subWindows
-        );
-    }
-
-    private AlgorithmResult<SlidingWindowCounterState> executeAlgorithm(
-            SlidingWindowCounterState state,
-            AlgorithmContext context) {
-
-        return algorithm.execute(
-                state,
-                standardPolicy,
-                context
-        );
-    }
-
-    private AlgorithmResult<SlidingWindowCounterState> executeAlgorithmWithPolicy(
-            SlidingWindowCounterState state,
-            SlidingWindowCounterPolicy policy,
-            AlgorithmContext context) {
-
-        return algorithm.execute(
-                state,
-                policy,
-                context
-        );
-    }
-
-    private AllowedDecision extractAllowed(
-            AlgorithmResult<SlidingWindowCounterState> result) {
-
-        assertTrue(
-                result.isAllowed(),
-                "Expected decision to be ALLOWED"
-        );
-
-        return assertInstanceOf(
-                AllowedDecision.class,
-                result.getDecision()
-        );
-    }
-
-    private DeniedDecision extractDenied(
-            AlgorithmResult<SlidingWindowCounterState> result) {
-
-        assertFalse(
-                result.isAllowed(),
-                "Expected decision to be DENIED"
-        );
-
-        return assertInstanceOf(
-                DeniedDecision.class,
-                result.getDecision()
-        );
-    }
-
-    private long subWindowMillis(
-            SlidingWindowCounterPolicy policy) {
-
-        return policy.getWindowSize().toMillis()
-                / policy.getSubWindows();
-    }
+	private SlidingWindowCounterAlgorithm algorithm;
+	private SlidingWindowCounterPolicy standardPolicy;
+	private Instant fixedNow;
+
+	@BeforeEach
+	void setUp() {
+		algorithm = new SlidingWindowCounterAlgorithmImpl();
+
+		standardPolicy =
+				new SlidingWindowCounterPolicy(
+						5,
+						Duration.ofMinutes(1),
+						6
+				);
+
+		fixedNow =
+				Instant.parse("2026-01-01T10:00:00Z");
+	}
+
+	// ============================================================
+	// Helpers
+	// ============================================================
+
+	private AlgorithmContext contextAt(Instant instant) {
+		return new AlgorithmContext(instant);
+	}
+
+	private SlidingWindowCounterState stateWith(
+			Map<Long, Integer> windows) {
+
+		return new SlidingWindowCounterState(windows);
+	}
+
+	private SlidingWindowCounterPolicy policyWith(
+			int limit,
+			Duration windowSize,
+			int subWindows) {
+
+		return new SlidingWindowCounterPolicy(
+				limit,
+				windowSize,
+				subWindows
+		);
+	}
+
+	private AlgorithmResult<SlidingWindowCounterState> executeAlgorithm(
+			SlidingWindowCounterState state,
+			AlgorithmContext context) {
+
+		return algorithm.execute(
+				state,
+				standardPolicy,
+				context
+		);
+	}
+
+	private AlgorithmResult<SlidingWindowCounterState> executeAlgorithmWithPolicy(
+			SlidingWindowCounterState state,
+			SlidingWindowCounterPolicy policy,
+			AlgorithmContext context) {
+
+		return algorithm.execute(
+				state,
+				policy,
+				context
+		);
+	}
+
+	private AllowedDecision extractAllowed(
+			AlgorithmResult<SlidingWindowCounterState> result) {
+
+		assertTrue(
+				result.isAllowed(),
+				"Expected decision to be ALLOWED"
+		);
+
+		return assertInstanceOf(
+				AllowedDecision.class,
+				result.getDecision()
+		);
+	}
+
+	private DeniedDecision extractDenied(
+			AlgorithmResult<SlidingWindowCounterState> result) {
+
+		assertFalse(
+				result.isAllowed(),
+				"Expected decision to be DENIED"
+		);
+
+		return assertInstanceOf(
+				DeniedDecision.class,
+				result.getDecision()
+		);
+	}
+
+	private long subWindowMillis(
+			SlidingWindowCounterPolicy policy) {
+
+		return policy.getWindowSize().toMillis()
+				/ policy.getSubWindows();
+	}
 
-    private long bucketFor(
-            Instant instant,
-            long subWindowMillis) {
+	private long bucketFor(
+			Instant instant,
+			long subWindowMillis) {
 
-        return instant.toEpochMilli()
-                / subWindowMillis;
-    }
+		return instant.toEpochMilli()
+				/ subWindowMillis;
+	}
 
-    private long standardBucketFor(
-            Instant instant) {
+	private long standardBucketFor(
+			Instant instant) {
 
-        return bucketFor(
-                instant,
-                subWindowMillis(standardPolicy)
-        );
-    }
+		return bucketFor(
+				instant,
+				subWindowMillis(standardPolicy)
+		);
+	}
 
-    // ============================================================
-    // Basic cases
-    // ============================================================
+	// ============================================================
+	// Basic cases
+	// ============================================================
 
-    @Nested
-    class BasicCases {
+	@Nested
+	class BasicCases {
 
-        @Test
-        void firstRequestShouldBeAllowed() {
+		@Test
+		void firstRequestShouldBeAllowed() {
 
-            // Arrange
+			// Arrange
 
-            SlidingWindowCounterState initialState =
-                    stateWith(new HashMap<>());
+			SlidingWindowCounterState initialState =
+					stateWith(new HashMap<>());
 
-            AlgorithmContext context =
-                    contextAt(fixedNow);
+			AlgorithmContext context =
+					contextAt(fixedNow);
 
-            // Act
+			// Act
 
-            AlgorithmResult<SlidingWindowCounterState> result =
-                    executeAlgorithm(
-                            initialState,
-                            context
-                    );
+			AlgorithmResult<SlidingWindowCounterState> result =
+					executeAlgorithm(
+							initialState,
+							context
+					);
 
-            // Assert
+			// Assert
 
-            AllowedDecision decision =
-                    extractAllowed(result);
+			AllowedDecision decision =
+					extractAllowed(result);
 
-            Map<Long, Integer> windows =
-                    result.getState().getWindows();
+			Map<Long, Integer> windows =
+					result.getState().getWindows();
 
-            assertEquals(
-                    4,
-                    decision.getRemaining()
-            );
+			assertEquals(
+					4,
+					decision.getRemaining()
+			);
 
-            assertEquals(
-                    1,
-                    windows.size()
-            );
+			assertEquals(
+					1,
+					windows.size()
+			);
 
-            assertEquals(
-                    Integer.valueOf(1),
-                    windows.get(
-                            standardBucketFor(fixedNow)
-                    )
-            );
-        }
+			assertEquals(
+					Integer.valueOf(1),
+					windows.get(
+							standardBucketFor(fixedNow)
+					)
+			);
+		}
 
-        @Test
-        void requestAfterLimitShouldBeDenied() {
+		@Test
+		void requestAfterLimitShouldBeDenied() {
 
-            // Arrange
+			// Arrange
 
-            Map<Long, Integer> windows =
-                    new HashMap<>();
+			Map<Long, Integer> windows =
+					new HashMap<>();
 
-            windows.put(
-                    standardBucketFor(fixedNow),
-                    5
-            );
+			windows.put(
+					standardBucketFor(fixedNow),
+					5
+			);
 
-            SlidingWindowCounterState initialState =
-                    stateWith(windows);
+			SlidingWindowCounterState initialState =
+					stateWith(windows);
 
-            AlgorithmContext context =
-                    contextAt(fixedNow);
+			AlgorithmContext context =
+					contextAt(fixedNow);
 
-            // Act
+			// Act
 
-            AlgorithmResult<SlidingWindowCounterState> result =
-                    executeAlgorithm(
-                            initialState,
-                            context
-                    );
+			AlgorithmResult<SlidingWindowCounterState> result =
+					executeAlgorithm(
+							initialState,
+							context
+					);
 
-            // Assert
+			// Assert
 
-            extractDenied(result);
+			extractDenied(result);
 
-            assertEquals(
-                    windows,
-                    result.getState().getWindows()
-            );
-        }
-    }
+			assertEquals(
+					windows,
+					result.getState().getWindows()
+			);
+		}
+	}
 
-    // ============================================================
-    // Remaining cases
-    // ============================================================
+	// ============================================================
+	// Remaining cases
+	// ============================================================
 
-    @Nested
-    class RemainingCases {
+	@Nested
+	class RemainingCases {
 
-        @Test
-        void remainingShouldAccountForExistingCounts() {
+		@Test
+		void remainingShouldAccountForExistingCounts() {
 
-            // Arrange
+			// Arrange
 
-            Map<Long, Integer> windows =
-                    new HashMap<>();
+			Map<Long, Integer> windows =
+					new HashMap<>();
 
-            windows.put(
-                    standardBucketFor(fixedNow),
-                    2
-            );
+			windows.put(
+					standardBucketFor(fixedNow),
+					2
+			);
 
-            SlidingWindowCounterState initialState =
-                    stateWith(windows);
+			SlidingWindowCounterState initialState =
+					stateWith(windows);
 
-            // Act
+			// Act
 
-            AlgorithmResult<SlidingWindowCounterState> result =
-                    executeAlgorithm(
-                            initialState,
-                            contextAt(fixedNow)
-                    );
+			AlgorithmResult<SlidingWindowCounterState> result =
+					executeAlgorithm(
+							initialState,
+							contextAt(fixedNow)
+					);
 
-            // Assert
+			// Assert
 
-            AllowedDecision decision =
-                    extractAllowed(result);
+			AllowedDecision decision =
+					extractAllowed(result);
 
-            assertEquals(
-                    2,
-                    decision.getRemaining()
-            );
-        }
+			assertEquals(
+					2,
+					decision.getRemaining()
+			);
+		}
 
-        @Test
-        void remainingShouldBeZeroAtLimitBoundary() {
+		@Test
+		void remainingShouldBeZeroAtLimitBoundary() {
 
-            // Arrange
+			// Arrange
 
-            Map<Long, Integer> windows =
-                    new HashMap<>();
+			Map<Long, Integer> windows =
+					new HashMap<>();
 
-            windows.put(
-                    standardBucketFor(fixedNow),
-                    4
-            );
+			windows.put(
+					standardBucketFor(fixedNow),
+					4
+			);
 
-            SlidingWindowCounterState initialState =
-                    stateWith(windows);
+			SlidingWindowCounterState initialState =
+					stateWith(windows);
 
-            // Act
+			// Act
 
-            AlgorithmResult<SlidingWindowCounterState> result =
-                    executeAlgorithm(
-                            initialState,
-                            contextAt(fixedNow)
-                    );
+			AlgorithmResult<SlidingWindowCounterState> result =
+					executeAlgorithm(
+							initialState,
+							contextAt(fixedNow)
+					);
 
-            // Assert
+			// Assert
 
-            AllowedDecision decision =
-                    extractAllowed(result);
+			AllowedDecision decision =
+					extractAllowed(result);
 
-            assertEquals(
-                    0,
-                    decision.getRemaining()
-            );
-        }
+			assertEquals(
+					0,
+					decision.getRemaining()
+			);
+		}
 
-        @Test
-        void countsFromMultipleFullyOverlappingBucketsShouldBeSummed() {
+		@Test
+		void countsFromMultipleFullyOverlappingBucketsShouldBeSummed() {
 
-            // Arrange
+			// Arrange
 
-            Map<Long, Integer> windows =
-                    new HashMap<>();
+			Map<Long, Integer> windows =
+					new HashMap<>();
 
-            windows.put(
-                    standardBucketFor(fixedNow),
-                    2
-            );
+			windows.put(
+					standardBucketFor(fixedNow),
+					2
+			);
 
-            windows.put(
-                    standardBucketFor(
-                            fixedNow.minusSeconds(20)
-                    ),
-                    2
-            );
+			windows.put(
+					standardBucketFor(
+							fixedNow.minusSeconds(20)
+					),
+					2
+			);
 
-            SlidingWindowCounterState initialState =
-                    stateWith(windows);
+			SlidingWindowCounterState initialState =
+					stateWith(windows);
 
-            // Act
+			// Act
 
-            AlgorithmResult<SlidingWindowCounterState> result =
-                    executeAlgorithm(
-                            initialState,
-                            contextAt(fixedNow)
-                    );
+			AlgorithmResult<SlidingWindowCounterState> result =
+					executeAlgorithm(
+							initialState,
+							contextAt(fixedNow)
+					);
 
-            // Assert
+			// Assert
 
-            AllowedDecision decision =
-                    extractAllowed(result);
+			AllowedDecision decision =
+					extractAllowed(result);
 
-            assertEquals(
-                    0,
-                    decision.getRemaining()
-            );
-        }
-    }
+			assertEquals(
+					0,
+					decision.getRemaining()
+			);
+		}
+	}
 
-    // ============================================================
-    // Weighted overlap cases
-    // ============================================================
+	// ============================================================
+	// Weighted overlap cases
+	// ============================================================
 
-    @Nested
-    class WeightedOverlapCases {
+	@Nested
+	class WeightedOverlapCases {
 
-        @Test
-        void partialOverlapBucketShouldContributePartialWeight() {
+		@Test
+		void partialOverlapBucketShouldContributePartialWeight() {
 
-            // Arrange
+			// Arrange
 
-            AlgorithmContext context =
-                    contextAt(
-                            fixedNow.plusSeconds(5)
-                    );
+			AlgorithmContext context =
+					contextAt(
+							fixedNow.plusSeconds(5)
+					);
 
-            long oldestBucket =
-                    standardBucketFor(
-                            fixedNow.minusSeconds(55)
-                    );
+			long oldestBucket =
+					standardBucketFor(
+							fixedNow.minusSeconds(55)
+					);
 
-            Map<Long, Integer> windows =
-                    new HashMap<>();
+			Map<Long, Integer> windows =
+					new HashMap<>();
 
-            windows.put(
-                    oldestBucket,
-                    4
-            );
+			windows.put(
+					oldestBucket,
+					4
+			);
 
-            SlidingWindowCounterState initialState =
-                    stateWith(windows);
+			SlidingWindowCounterState initialState =
+					stateWith(windows);
 
-            // Act
+			// Act
 
-            AlgorithmResult<SlidingWindowCounterState> result =
-                    executeAlgorithm(
-                            initialState,
-                            context
-                    );
+			AlgorithmResult<SlidingWindowCounterState> result =
+					executeAlgorithm(
+							initialState,
+							context
+					);
 
-            // Assert
+			// Assert
 
-            AllowedDecision decision =
-                    extractAllowed(result);
+			AllowedDecision decision =
+					extractAllowed(result);
 
-            assertEquals(
-                    2,
-                    decision.getRemaining()
-            );
-        }
+			assertEquals(
+					2,
+					decision.getRemaining()
+			);
+		}
 
-        @Test
-        void deniedWhenPartialOverlapWeightAloneReachesLimit() {
+		@Test
+		void deniedWhenPartialOverlapWeightAloneReachesLimit() {
 
-            // Arrange
+			// Arrange
 
-            AlgorithmContext context =
-                    contextAt(
-                            fixedNow.plusSeconds(5)
-                    );
+			AlgorithmContext context =
+					contextAt(
+							fixedNow.plusSeconds(5)
+					);
 
-            long oldestBucket =
-                    standardBucketFor(
-                            fixedNow.minusSeconds(55)
-                    );
+			long oldestBucket =
+					standardBucketFor(
+							fixedNow.minusSeconds(55)
+					);
 
-            Map<Long, Integer> windows =
-                    new HashMap<>();
+			Map<Long, Integer> windows =
+					new HashMap<>();
 
-            windows.put(
-                    oldestBucket,
-                    10
-            );
+			windows.put(
+					oldestBucket,
+					10
+			);
 
-            SlidingWindowCounterState initialState =
-                    stateWith(windows);
+			SlidingWindowCounterState initialState =
+					stateWith(windows);
 
-            // Act
+			// Act
 
-            AlgorithmResult<SlidingWindowCounterState> result =
-                    executeAlgorithm(
-                            initialState,
-                            context
-                    );
+			AlgorithmResult<SlidingWindowCounterState> result =
+					executeAlgorithm(
+							initialState,
+							context
+					);
 
-            // Assert
+			// Assert
 
-            extractDenied(result);
-        }
+			extractDenied(result);
+		}
 
-        @Test
-        void bucketFullyOutsideWindowShouldContributeZeroWeight() {
+		@Test
+		void bucketFullyOutsideWindowShouldContributeZeroWeight() {
 
-            // Arrange
+			// Arrange
 
-            Map<Long, Integer> windows =
-                    new HashMap<>();
+			Map<Long, Integer> windows =
+					new HashMap<>();
 
-            windows.put(
-                    standardBucketFor(
-                            fixedNow.minusSeconds(300)
-                    ),
-                    5
-            );
+			windows.put(
+					standardBucketFor(
+							fixedNow.minusSeconds(300)
+					),
+					5
+			);
 
-            SlidingWindowCounterState initialState =
-                    stateWith(windows);
+			SlidingWindowCounterState initialState =
+					stateWith(windows);
 
-            // Act
+			// Act
 
-            AlgorithmResult<SlidingWindowCounterState> result =
-                    executeAlgorithm(
-                            initialState,
-                            contextAt(fixedNow)
-                    );
+			AlgorithmResult<SlidingWindowCounterState> result =
+					executeAlgorithm(
+							initialState,
+							contextAt(fixedNow)
+					);
 
-            // Assert
+			// Assert
 
-            AllowedDecision decision =
-                    extractAllowed(result);
+			AllowedDecision decision =
+					extractAllowed(result);
 
-            assertEquals(
-                    4,
-                    decision.getRemaining()
-            );
-        }
-    }
+			assertEquals(
+					4,
+					decision.getRemaining()
+			);
+		}
+	}
 
-    // ============================================================
-    // Counter cases
-    // ============================================================
+	// ============================================================
+	// Counter cases
+	// ============================================================
 
-    @Nested
-    class CounterCases {
+	@Nested
+	class CounterCases {
 
-        @Test
-        void allowedRequestShouldIncrementExistingBucket() {
+		@Test
+		void allowedRequestShouldIncrementExistingBucket() {
 
-            // Arrange
+			// Arrange
 
-            Map<Long, Integer> windows =
-                    new HashMap<>();
+			Map<Long, Integer> windows =
+					new HashMap<>();
 
-            windows.put(
-                    standardBucketFor(fixedNow),
-                    2
-            );
+			windows.put(
+					standardBucketFor(fixedNow),
+					2
+			);
 
-            SlidingWindowCounterState initialState =
-                    stateWith(windows);
+			SlidingWindowCounterState initialState =
+					stateWith(windows);
 
-            // Act
+			// Act
 
-            AlgorithmResult<SlidingWindowCounterState> result =
-                    executeAlgorithm(
-                            initialState,
-                            contextAt(fixedNow)
-                    );
+			AlgorithmResult<SlidingWindowCounterState> result =
+					executeAlgorithm(
+							initialState,
+							contextAt(fixedNow)
+					);
 
-            // Assert
+			// Assert
 
-            extractAllowed(result);
+			extractAllowed(result);
 
-            Map<Long, Integer> newWindows =
-                    result.getState().getWindows();
+			Map<Long, Integer> newWindows =
+					result.getState().getWindows();
 
-            assertEquals(
-                    1,
-                    newWindows.size()
-            );
+			assertEquals(
+					1,
+					newWindows.size()
+			);
 
-            assertEquals(
-                    Integer.valueOf(3),
-                    newWindows.get(
-                            standardBucketFor(fixedNow)
-                    )
-            );
-        }
+			assertEquals(
+					Integer.valueOf(3),
+					newWindows.get(
+							standardBucketFor(fixedNow)
+					)
+			);
+		}
 
-        @Test
-        void deniedRequestShouldNotModifyWindows() {
+		@Test
+		void deniedRequestShouldNotModifyWindows() {
 
-            // Arrange
+			// Arrange
 
-            Map<Long, Integer> windows =
-                    new HashMap<>();
+			Map<Long, Integer> windows =
+					new HashMap<>();
 
-            windows.put(
-                    standardBucketFor(fixedNow),
-                    5
-            );
+			windows.put(
+					standardBucketFor(fixedNow),
+					5
+			);
 
-            SlidingWindowCounterState initialState =
-                    stateWith(windows);
+			SlidingWindowCounterState initialState =
+					stateWith(windows);
 
-            // Act
+			// Act
 
-            AlgorithmResult<SlidingWindowCounterState> result =
-                    executeAlgorithm(
-                            initialState,
-                            contextAt(fixedNow)
-                    );
+			AlgorithmResult<SlidingWindowCounterState> result =
+					executeAlgorithm(
+							initialState,
+							contextAt(fixedNow)
+					);
 
-            // Assert
+			// Assert
 
-            extractDenied(result);
+			extractDenied(result);
 
-            Map<Long, Integer> returnedWindows =
-                    result.getState().getWindows();
+			Map<Long, Integer> returnedWindows =
+					result.getState().getWindows();
 
-            assertEquals(
-                    1,
-                    returnedWindows.size()
-            );
+			assertEquals(
+					1,
+					returnedWindows.size()
+			);
 
-            assertEquals(
-                    Integer.valueOf(5),
-                    returnedWindows.get(
-                            standardBucketFor(fixedNow)
-                    )
-            );
-        }
+			assertEquals(
+					Integer.valueOf(5),
+					returnedWindows.get(
+							standardBucketFor(fixedNow)
+					)
+			);
+		}
 
-        @Test
-        void allowedRequestShouldCreateNewBucketWhenTimeMovesToAnotherSubWindow() {
+		@Test
+		void allowedRequestShouldCreateNewBucketWhenTimeMovesToAnotherSubWindow() {
 
-            // Arrange
+			// Arrange
 
-            Map<Long, Integer> windows =
-                    new HashMap<>();
+			Map<Long, Integer> windows =
+					new HashMap<>();
 
-            windows.put(
-                    standardBucketFor(fixedNow),
-                    2
-            );
+			windows.put(
+					standardBucketFor(fixedNow),
+					2
+			);
 
-            SlidingWindowCounterState initialState =
-                    stateWith(windows);
+			SlidingWindowCounterState initialState =
+					stateWith(windows);
 
-            Instant later =
-                    fixedNow.plusSeconds(10);
+			Instant later =
+					fixedNow.plusSeconds(10);
 
-            // Act
+			// Act
 
-            AlgorithmResult<SlidingWindowCounterState> result =
-                    executeAlgorithm(
-                            initialState,
-                            contextAt(later)
-                    );
+			AlgorithmResult<SlidingWindowCounterState> result =
+					executeAlgorithm(
+							initialState,
+							contextAt(later)
+					);
 
-            // Assert
+			// Assert
 
-            extractAllowed(result);
+			extractAllowed(result);
 
-            Map<Long, Integer> resultWindows =
-                    result.getState().getWindows();
+			Map<Long, Integer> resultWindows =
+					result.getState().getWindows();
 
-            assertEquals(
-                    2,
-                    resultWindows.size()
-            );
+			assertEquals(
+					2,
+					resultWindows.size()
+			);
 
-            assertEquals(
-                    Integer.valueOf(2),
-                    resultWindows.get(
-                            standardBucketFor(fixedNow)
-                    )
-            );
+			assertEquals(
+					Integer.valueOf(2),
+					resultWindows.get(
+							standardBucketFor(fixedNow)
+					)
+			);
 
-            assertEquals(
-                    Integer.valueOf(1),
-                    resultWindows.get(
-                            standardBucketFor(later)
-                    )
-            );
-        }
-    }
+			assertEquals(
+					Integer.valueOf(1),
+					resultWindows.get(
+							standardBucketFor(later)
+					)
+			);
+		}
+	}
 
-    // ============================================================
-    // Pruning cases
-    // ============================================================
+	// ============================================================
+	// Pruning cases
+	// ============================================================
 
-    @Nested
-    class PruningCases {
+	@Nested
+	class PruningCases {
 
-        @Test
-        void bucketsOutsideWindowShouldBeRemovedFromResultingState() {
+		@Test
+		void bucketsOutsideWindowShouldBeRemovedFromResultingState() {
 
-            // Arrange
+			// Arrange
 
-            long expiredBucket =
-                    standardBucketFor(
-                            fixedNow.minusSeconds(120)
-                    );
+			long expiredBucket =
+					standardBucketFor(
+							fixedNow.minusSeconds(120)
+					);
 
-            long validBucket =
-                    standardBucketFor(
-                            fixedNow.minusSeconds(20)
-                    );
+			long validBucket =
+					standardBucketFor(
+							fixedNow.minusSeconds(20)
+					);
 
-            Map<Long, Integer> windows =
-                    new HashMap<>();
+			Map<Long, Integer> windows =
+					new HashMap<>();
 
-            windows.put(
-                    expiredBucket,
-                    3
-            );
+			windows.put(
+					expiredBucket,
+					3
+			);
 
-            windows.put(
-                    validBucket,
-                    1
-            );
+			windows.put(
+					validBucket,
+					1
+			);
 
-            SlidingWindowCounterState initialState =
-                    stateWith(windows);
+			SlidingWindowCounterState initialState =
+					stateWith(windows);
 
-            // Act
+			// Act
 
-            AlgorithmResult<SlidingWindowCounterState> result =
-                    executeAlgorithm(
-                            initialState,
-                            contextAt(fixedNow)
-                    );
+			AlgorithmResult<SlidingWindowCounterState> result =
+					executeAlgorithm(
+							initialState,
+							contextAt(fixedNow)
+					);
 
-            // Assert
+			// Assert
 
-            Map<Long, Integer> resultWindows =
-                    result.getState().getWindows();
+			Map<Long, Integer> resultWindows =
+					result.getState().getWindows();
 
-            assertFalse(
-                    resultWindows.containsKey(expiredBucket)
-            );
+			assertFalse(
+					resultWindows.containsKey(expiredBucket)
+			);
 
-            assertTrue(
-                    resultWindows.containsKey(validBucket)
-            );
-        }
+			assertTrue(
+					resultWindows.containsKey(validBucket)
+			);
+		}
 
-        @Test
-        void bucketEndingExactlyAtWindowStartShouldBeRemoved() {
+		@Test
+		void bucketEndingExactlyAtWindowStartShouldBeRemoved() {
 
-            // Arrange
+			// Arrange
 
-            /*
-             * Window:
-             *
-             * fixedNow - 60 seconds
-             *       ↓
-             *
-             * El bucket termina exactamente
-             * en el inicio de la ventana.
-             */
+			/*
+			 * Window:
+			 *
+			 * fixedNow - 60 seconds
+			 *       ↓
+			 *
+			 * The bucket ends exactly
+			 * at the window start.
+			 */
 
-            long expiredBucket =
-                    standardBucketFor(
-                            fixedNow.minusSeconds(70)
-                    );
+			long expiredBucket =
+					standardBucketFor(
+							fixedNow.minusSeconds(70)
+					);
 
-            Map<Long, Integer> windows =
-                    new HashMap<>();
+			Map<Long, Integer> windows =
+					new HashMap<>();
 
-            windows.put(
-                    expiredBucket,
-                    3
-            );
+			windows.put(
+					expiredBucket,
+					3
+			);
 
-            SlidingWindowCounterState initialState =
-                    stateWith(windows);
+			SlidingWindowCounterState initialState =
+					stateWith(windows);
 
-            // Act
+			// Act
 
-            AlgorithmResult<SlidingWindowCounterState> result =
-                    executeAlgorithm(
-                            initialState,
-                            contextAt(fixedNow)
-                    );
+			AlgorithmResult<SlidingWindowCounterState> result =
+					executeAlgorithm(
+							initialState,
+							contextAt(fixedNow)
+					);
 
-            // Assert
+			// Assert
 
-            Map<Long, Integer> resultWindows =
-                    result.getState().getWindows();
+			Map<Long, Integer> resultWindows =
+					result.getState().getWindows();
 
-            assertFalse(
-                    resultWindows.containsKey(expiredBucket)
-            );
-        }
+			assertFalse(
+					resultWindows.containsKey(expiredBucket)
+			);
+		}
 
-        @Test
-        void partiallyOverlappingBucketShouldNotBePruned() {
+		@Test
+		void partiallyOverlappingBucketShouldNotBePruned() {
 
-            // Arrange
+			// Arrange
 
-            Instant now =
-                    fixedNow.plusSeconds(5);
+			Instant now =
+					fixedNow.plusSeconds(5);
 
-            long partialBucket =
-                    standardBucketFor(
-                            fixedNow.minusSeconds(55)
-                    );
+			long partialBucket =
+					standardBucketFor(
+							fixedNow.minusSeconds(55)
+					);
 
-            Map<Long, Integer> windows =
-                    new HashMap<>();
+			Map<Long, Integer> windows =
+					new HashMap<>();
 
-            windows.put(
-                    partialBucket,
-                    3
-            );
+			windows.put(
+					partialBucket,
+					3
+			);
 
-            SlidingWindowCounterState initialState =
-                    stateWith(windows);
+			SlidingWindowCounterState initialState =
+					stateWith(windows);
 
-            // Act
+			// Act
 
-            AlgorithmResult<SlidingWindowCounterState> result =
-                    executeAlgorithm(
-                            initialState,
-                            contextAt(now)
-                    );
+			AlgorithmResult<SlidingWindowCounterState> result =
+					executeAlgorithm(
+							initialState,
+							contextAt(now)
+					);
 
-            // Assert
+			// Assert
 
-            Map<Long, Integer> resultWindows =
-                    result.getState().getWindows();
+			Map<Long, Integer> resultWindows =
+					result.getState().getWindows();
 
-            assertTrue(
-                    resultWindows.containsKey(partialBucket)
-            );
-        }
-    }
+			assertTrue(
+					resultWindows.containsKey(partialBucket)
+			);
+		}
+	}
 
-    // ============================================================
-    // Retry after cases
-    // ============================================================
+	// ============================================================
+	// Retry after cases
+	// ============================================================
 
-    @Nested
-    class RetryAfterCases {
+	@Nested
+	class RetryAfterCases {
 
-        @Test
-        void retryAfterShouldBeCalculatedFromPartialOldestBucketDecay() {
+		@Test
+		void retryAfterShouldBeCalculatedFromPartialOldestBucketDecay() {
 
-            // Arrange
+			// Arrange
 
-            /*
-             * Window = 60 seconds
-             * Buckets = 6
-             * Bucket size = 10 seconds
-             * Limit = 5
-             *
-             * At fixedNow + 5s:
-             *
-             * Oldest bucket has 10 requests.
-             *
-             * Its current weight is 0.5.
-             *
-             * Weighted count:
-             *
-             * 10 * 0.5 = 5
-             *
-             * The request is denied.
-             *
-             * The bucket contribution decreases at:
-             *
-             * 10 / 10000 = 0.001 request/ms
-             *
-             * To allow another request:
-             *
-             * weightedCount <= 4
-             *
-             * Need to decrease:
-             *
-             * 5 -> 4
-             *
-             * Required:
-             *
-             * 1000ms
-             */
+			/*
+			 * Window = 60 seconds
+			 * Buckets = 6
+			 * Bucket size = 10 seconds
+			 * Limit = 5
+			 *
+			 * At fixedNow + 5s:
+			 *
+			 * Oldest bucket has 10 requests.
+			 *
+			 * Its current weight is 0.5.
+			 *
+			 * Weighted count:
+			 *
+			 * 10 * 0.5 = 5
+			 *
+			 * The request is denied.
+			 *
+			 * The bucket contribution decreases at:
+			 *
+			 * 10 / 10000 = 0.001 request/ms
+			 *
+			 * To allow another request:
+			 *
+			 * weightedCount <= 4
+			 *
+			 * Need to decrease:
+			 *
+			 * 5 -> 4
+			 *
+			 * Required:
+			 *
+			 * 1000ms
+			 */
 
-            Instant now =
-                    fixedNow.plusSeconds(5);
+			Instant now =
+					fixedNow.plusSeconds(5);
 
-            long oldestBucket =
-                    standardBucketFor(
-                            fixedNow.minusSeconds(55)
-                    );
+			long oldestBucket =
+					standardBucketFor(
+							fixedNow.minusSeconds(55)
+					);
 
-            Map<Long, Integer> windows =
-                    new HashMap<>();
+			Map<Long, Integer> windows =
+					new HashMap<>();
 
-            windows.put(
-                    oldestBucket,
-                    10
-            );
+			windows.put(
+					oldestBucket,
+					10
+			);
 
-            SlidingWindowCounterState initialState =
-                    stateWith(windows);
+			SlidingWindowCounterState initialState =
+					stateWith(windows);
 
-            // Act
+			// Act
 
-            AlgorithmResult<SlidingWindowCounterState> result =
-                    executeAlgorithm(
-                            initialState,
-                            contextAt(now)
-                    );
+			AlgorithmResult<SlidingWindowCounterState> result =
+					executeAlgorithm(
+							initialState,
+							contextAt(now)
+					);
 
-            // Assert
+			// Assert
 
-            DeniedDecision decision =
-                    extractDenied(result);
+			DeniedDecision decision =
+					extractDenied(result);
 
-            assertEquals(
-                    Duration.ofSeconds(1),
-                    decision.getRetryAfter()
-            );
-        }
+			assertEquals(
+					Duration.ofSeconds(1),
+					decision.getRetryAfter()
+			);
+		}
 
-        @Test
-        void retryAfterShouldCrossMultipleBucketsWhenOldestBucketIsNotEnough() {
+		@Test
+		void retryAfterShouldCrossMultipleBucketsWhenOldestBucketIsNotEnough() {
 
-            // Arrange
+			// Arrange
 
-            /*
-             * Limit = 5
-             *
-             * Oldest bucket contributes 1.
-             * Next bucket contributes 5.
-             *
-             * Total = 6.
-             *
-             * Removing the oldest bucket is not enough
-             * to allow a new request.
-             *
-             * The algorithm must continue evaluating
-             * the next bucket.
-             */
+			/*
+			 * Limit = 5
+			 *
+			 * Oldest bucket contributes 1.
+			 * Next bucket contributes 5.
+			 *
+			 * Total = 6.
+			 *
+			 * Removing the oldest bucket is not enough
+			 * to allow a new request.
+			 *
+			 * The algorithm must continue evaluating
+			 * the next bucket.
+			 */
 
-            SlidingWindowCounterPolicy policy =
-                    policyWith(
-                            5,
-                            Duration.ofMinutes(1),
-                            6
-                    );
+			SlidingWindowCounterPolicy policy =
+					policyWith(
+							5,
+							Duration.ofMinutes(1),
+							6
+					);
 
-            Instant now =
-                    fixedNow.plusSeconds(5);
+			Instant now =
+					fixedNow.plusSeconds(5);
 
-            long oldestBucket =
-                    standardBucketFor(
-                            fixedNow.minusSeconds(55)
-                    );
+			long oldestBucket =
+					standardBucketFor(
+							fixedNow.minusSeconds(55)
+					);
 
-            long nextBucket =
-                    standardBucketFor(
-                            fixedNow.minusSeconds(45)
-                    );
+			long nextBucket =
+					standardBucketFor(
+							fixedNow.minusSeconds(45)
+					);
 
-            Map<Long, Integer> windows =
-                    new HashMap<>();
+			Map<Long, Integer> windows =
+					new HashMap<>();
 
-            windows.put(
-                    oldestBucket,
-                    2
-            );
+			windows.put(
+					oldestBucket,
+					2
+			);
 
-            windows.put(
-                    nextBucket,
-                    5
-            );
+			windows.put(
+					nextBucket,
+					5
+			);
 
-            SlidingWindowCounterState initialState =
-                    stateWith(windows);
+			SlidingWindowCounterState initialState =
+					stateWith(windows);
 
-            // Act
+			// Act
 
-            AlgorithmResult<SlidingWindowCounterState> result =
-                    executeAlgorithmWithPolicy(
-                            initialState,
-                            policy,
-                            contextAt(now)
-                    );
+			AlgorithmResult<SlidingWindowCounterState> result =
+					executeAlgorithmWithPolicy(
+							initialState,
+							policy,
+							contextAt(now)
+					);
 
-            // Assert
+			// Assert
 
-            DeniedDecision decision =
-                    extractDenied(result);
+			DeniedDecision decision =
+					extractDenied(result);
 
-            assertTrue(
-                    decision.getRetryAfter()
-                            .compareTo(Duration.ofSeconds(5)) > 0
-            );
-        }
+			assertTrue(
+					decision.getRetryAfter()
+							.compareTo(Duration.ofSeconds(5)) > 0
+			);
+		}
 
-        @Test
-        void retryAfterShouldBePositiveWhenLimitIsReached() {
+		@Test
+		void retryAfterShouldBePositiveWhenLimitIsReached() {
 
-            // Arrange
+			// Arrange
 
-            Map<Long, Integer> windows =
-                    new HashMap<>();
+			Map<Long, Integer> windows =
+					new HashMap<>();
 
-            windows.put(
-                    standardBucketFor(fixedNow),
-                    5
-            );
+			windows.put(
+					standardBucketFor(fixedNow),
+					5
+			);
 
-            SlidingWindowCounterState initialState =
-                    stateWith(windows);
+			SlidingWindowCounterState initialState =
+					stateWith(windows);
 
-            // Act
+			// Act
 
-            AlgorithmResult<SlidingWindowCounterState> result =
-                    executeAlgorithm(
-                            initialState,
-                            contextAt(fixedNow)
-                    );
+			AlgorithmResult<SlidingWindowCounterState> result =
+					executeAlgorithm(
+							initialState,
+							contextAt(fixedNow)
+					);
 
-            // Assert
+			// Assert
 
-            DeniedDecision decision =
-                    extractDenied(result);
+			DeniedDecision decision =
+					extractDenied(result);
 
-            assertTrue(
-                    decision.getRetryAfter()
-                            .compareTo(Duration.ZERO) > 0
-            );
-        }
-    }
+			assertTrue(
+					decision.getRetryAfter()
+							.compareTo(Duration.ZERO) > 0
+			);
+		}
+	}
 
-    // ============================================================
-    // Expiration cases
-    // ============================================================
+	// ============================================================
+	// Expiration cases
+	// ============================================================
 
-    @Nested
-    class ExpirationCases {
+	@Nested
+	class ExpirationCases {
 
-        @Test
-        void allowedResultShouldExpireAfterEntireWindow() {
+		@Test
+		void allowedResultShouldExpireAfterEntireWindow() {
 
-            // Arrange
+			// Arrange
 
-            SlidingWindowCounterState initialState =
-                    stateWith(new HashMap<>());
+			SlidingWindowCounterState initialState =
+					stateWith(new HashMap<>());
 
-            // Act
+			// Act
 
-            AlgorithmResult<SlidingWindowCounterState> result =
-                    executeAlgorithm(
-                            initialState,
-                            contextAt(fixedNow)
-                    );
+			AlgorithmResult<SlidingWindowCounterState> result =
+					executeAlgorithm(
+							initialState,
+							contextAt(fixedNow)
+					);
 
-            // Assert
+			// Assert
 
-            assertEquals(
-                    standardPolicy.getWindowSize(),
-                    result.getExpireIn()
-            );
-        }
+			assertEquals(
+					standardPolicy.getWindowSize(),
+					result.getExpireIn()
+			);
+		}
 
-        @Test
-        void deniedResultShouldKeepStateForEntireWindow() {
+		@Test
+		void deniedResultShouldKeepStateForEntireWindow() {
 
-            // Arrange
+			// Arrange
 
-            Map<Long, Integer> windows =
-                    new HashMap<>();
+			Map<Long, Integer> windows =
+					new HashMap<>();
 
-            windows.put(
-                    standardBucketFor(fixedNow),
-                    5
-            );
+			windows.put(
+					standardBucketFor(fixedNow),
+					5
+			);
 
-            SlidingWindowCounterState initialState =
-                    stateWith(windows);
+			SlidingWindowCounterState initialState =
+					stateWith(windows);
 
-            // Act
+			// Act
 
-            AlgorithmResult<SlidingWindowCounterState> result =
-                    executeAlgorithm(
-                            initialState,
-                            contextAt(fixedNow)
-                    );
+			AlgorithmResult<SlidingWindowCounterState> result =
+					executeAlgorithm(
+							initialState,
+							contextAt(fixedNow)
+					);
 
-            // Assert
+			// Assert
 
-            extractDenied(result);
+			extractDenied(result);
 
-            assertEquals(
-                    standardPolicy.getWindowSize(),
-                    result.getExpireIn()
-            );
-        }
-    }
+			assertEquals(
+					standardPolicy.getWindowSize(),
+					result.getExpireIn()
+			);
+		}
+	}
 
-    // ============================================================
-    // State cases
-    // ============================================================
+	// ============================================================
+	// State cases
+	// ============================================================
 
-    @Nested
-    class StateCases {
+	@Nested
+	class StateCases {
 
-        @Test
-        void allowedRequestShouldReturnNewStateInstance() {
+		@Test
+		void allowedRequestShouldReturnNewStateInstance() {
 
-            // Arrange
+			// Arrange
 
-            Map<Long, Integer> windows =
-                    new HashMap<>();
+			Map<Long, Integer> windows =
+					new HashMap<>();
 
-            SlidingWindowCounterState initialState =
-                    stateWith(windows);
+			SlidingWindowCounterState initialState =
+					stateWith(windows);
 
-            // Act
+			// Act
 
-            AlgorithmResult<SlidingWindowCounterState> result =
-                    executeAlgorithm(
-                            initialState,
-                            contextAt(fixedNow)
-                    );
+			AlgorithmResult<SlidingWindowCounterState> result =
+					executeAlgorithm(
+							initialState,
+							contextAt(fixedNow)
+					);
 
-            // Assert
+			// Assert
 
-            assertNotSame(
-                    initialState,
-                    result.getState()
-            );
-        }
-    }
-    
-    @Nested
-    class CodecCases {
+			assertNotSame(
+					initialState,
+					result.getState()
+			);
+		}
+	}
+	
+	@Nested
+	class CodecCases {
 
-    	@Test
-    	void encodeThenDecodeShouldReturnEquivalentState() {
+		@Test
+		void encodeThenDecodeShouldReturnEquivalentState() {
 
-    		// Arrange
-    		StateCodec<SlidingWindowCounterState> codec = algorithm.getCodec();
+			// Arrange
+			StateCodec<SlidingWindowCounterState> codec = algorithm.getCodec();
 
-    		Map<Long, Integer> windows = new HashMap<>();
-    		windows.put(standardBucketFor(fixedNow), 3);
-    		windows.put(standardBucketFor(fixedNow.minusSeconds(20)), 2);
+			Map<Long, Integer> windows = new HashMap<>();
+			windows.put(standardBucketFor(fixedNow), 3);
+			windows.put(standardBucketFor(fixedNow.minusSeconds(20)), 2);
 
-    		SlidingWindowCounterState original = stateWith(windows);
+			SlidingWindowCounterState original = stateWith(windows);
 
-    		// Act
-    		SlidingWindowCounterState decoded = codec.decode(codec.encode(original));
+			// Act
+			SlidingWindowCounterState decoded = codec.decode(codec.encode(original));
 
-    		// Assert
-    		assertEquals(original.getWindows(), decoded.getWindows());
+			// Assert
+			assertEquals(original.getWindows(), decoded.getWindows());
 
-    	}
+		}
 
-    	@Test
-    	void encodeThenDecodeShouldWorkWithEmptyMap() {
+		@Test
+		void encodeThenDecodeShouldWorkWithEmptyMap() {
 
-    		// Arrange
-    		// Mismo caso critico que en Log: mapa recien creado (vacio)
-    		// no debe romper el parsing.
-    		StateCodec<SlidingWindowCounterState> codec = algorithm.getCodec();
-    		SlidingWindowCounterState original = stateWith(new HashMap<>());
+			// Arrange
+			// Same critical case as in Log: a freshly created (empty) map
+			// must not break the parsing.
+			StateCodec<SlidingWindowCounterState> codec = algorithm.getCodec();
+			SlidingWindowCounterState original = stateWith(new HashMap<>());
 
-    		// Act
-    		SlidingWindowCounterState decoded = codec.decode(codec.encode(original));
+			// Act
+			SlidingWindowCounterState decoded = codec.decode(codec.encode(original));
 
-    		// Assert
-    		assertTrue(decoded.getWindows().isEmpty());
+			// Assert
+			assertTrue(decoded.getWindows().isEmpty());
 
-    	}
+		}
 
-    	@Test
-    	void encodeThenDecodeShouldWorkWithSingleBucket() {
+		@Test
+		void encodeThenDecodeShouldWorkWithSingleBucket() {
 
-    		// Arrange
-    		StateCodec<SlidingWindowCounterState> codec = algorithm.getCodec();
+			// Arrange
+			StateCodec<SlidingWindowCounterState> codec = algorithm.getCodec();
 
-    		Map<Long, Integer> windows = new HashMap<>();
-    		windows.put(standardBucketFor(fixedNow), 1);
+			Map<Long, Integer> windows = new HashMap<>();
+			windows.put(standardBucketFor(fixedNow), 1);
 
-    		SlidingWindowCounterState original = stateWith(windows);
+			SlidingWindowCounterState original = stateWith(windows);
 
-    		// Act
-    		SlidingWindowCounterState decoded = codec.decode(codec.encode(original));
+			// Act
+			SlidingWindowCounterState decoded = codec.decode(codec.encode(original));
 
-    		// Assert
-    		assertEquals(Integer.valueOf(1), decoded.getWindows().get(standardBucketFor(fixedNow)));
+			// Assert
+			assertEquals(Integer.valueOf(1), decoded.getWindows().get(standardBucketFor(fixedNow)));
 
-    	}
+		}
 
-    }
-    
+	}
+	
 }

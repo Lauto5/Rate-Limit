@@ -18,7 +18,7 @@ import io.github.lauto5.rateLimit.domain.policies.FixedWindowPolicy;
  * anew. State is serialized as a UTF-8 string containing the count and the window start
  * instant.
  */
-public class FixedWindowAlgorithmImpl implements FixedWindowAlgorithm {
+public final class FixedWindowAlgorithmImpl implements FixedWindowAlgorithm {
 
 	private static final StateCodec<FixedWindowState> CODEC = new StateCodec<FixedWindowState>() {
 
@@ -42,101 +42,101 @@ public class FixedWindowAlgorithmImpl implements FixedWindowAlgorithm {
 		}
 
 	};
-	
+
 	@Override
 	public StateCodec<FixedWindowState> getCodec() {
 		return CODEC;
 	}
-	
+
 	@Override
 	public AlgorithmResult<FixedWindowState> execute(FixedWindowState state, FixedWindowPolicy policy,
 			AlgorithmContext context) {
-		
+
 		Instant now = context.getNow();
-		
+
 		Instant windowEnd = state.getWindowStart().plus(policy.getWindowSize());
 
-		Duration expireIn = Duration.between(now , windowEnd);
-		
+		Duration expireIn = Duration.between(now, windowEnd);
+
 
 		/*
 		 * 1 :
-		 * 
+		 *
 		 * If the current window has expired, a new window
 		 * is created starting at the current instant.
 		 */
-		
+
 		if (isWindowExpired(now, windowEnd)) {
-			
+
 			FixedWindowState newState = new FixedWindowState(
-					1, 
+					1,
 					now
 			);
-			
+
 			Instant newResetAt = now.plus(
 					policy.getWindowSize()
 			);
-			
-			int remaining = 
+
+			int remaining =
 					policy.getLimit() - 1;
-			
+
 			return AlgorithmResult.allowed(
-					newState, 
-					remaining, 
-					newResetAt, 
+					newState,
+					remaining,
+					newResetAt,
 					policy.getWindowSize()
 			);
-			
+
 		}
-		
+
 		/*
 		 * 2 :
-		 * 
+		 *
 		 * The window is still valid.
 		 * If permits are still available,
 		 * one is consumed.
 		 */
-		
+
 		if (state.getCount() < policy.getLimit()) {
-			
+
 			FixedWindowState newState = new FixedWindowState(
-					state.getCount() + 1 , 
+					state.getCount() + 1,
 					state.getWindowStart()
 			);
-			
-			int remaining = policy.getLimit() - newState.getCount(); 
-			
+
+			int remaining = policy.getLimit() - newState.getCount();
+
 			return AlgorithmResult.allowed(
-					newState, 
-					remaining, 
-					windowEnd, 
+					newState,
+					remaining,
+					windowEnd,
 					expireIn
 			);
-			
+
 		}
-		
+
 		/*
 		 * 3 :
-		 * 
+		 *
 		 * No permits are available within
 		 * the current window.
 		 */
-		
+
 		return AlgorithmResult.denied(
-		        state,
-		        expireIn,
-		        windowEnd,
-		        expireIn
+				state,
+				expireIn,
+				windowEnd,
+				expireIn
 		);
-		
+
 	}
 
 	@Override
 	public FixedWindowState createInitialState(FixedWindowPolicy policy, AlgorithmContext context) {
 		return new FixedWindowState(0, context.getNow());
 	}
-	
-	private boolean isWindowExpired(Instant now , Instant windowEnd ) {
+
+	private boolean isWindowExpired(Instant now, Instant windowEnd) {
 		return !now.isBefore(windowEnd);
 	}
 

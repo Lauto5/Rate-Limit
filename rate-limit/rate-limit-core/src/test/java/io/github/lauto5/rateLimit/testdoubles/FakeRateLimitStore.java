@@ -7,34 +7,34 @@ import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
 
 public final class FakeRateLimitStore implements RateLimitStore {
 
-    private final AtomicOperationResult<?> result;
+	private final AtomicOperationResult<?> result;
 
-    private String receivedIdentifier;
-    private AtomicOperation<?> receivedOperation;
+	private String receivedIdentifier;
+	private AtomicOperation<?> receivedOperation;
 
-    public FakeRateLimitStore(
-            AtomicOperationResult<?> result) {
+	public FakeRateLimitStore(
+			AtomicOperationResult<?> result) {
 
-        this.result = result;
-    }
+		this.result = result;
+	}
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public <S extends AlgorithmState> AtomicOperationResult<S> executeAtomically(
-            String identifier,
-            AtomicOperation<S> operation) {
+	@Override
+	@SuppressWarnings("unchecked")
+	public <S extends AlgorithmState> AtomicOperationResult<S> executeAtomically(
+			String identifier,
+			AtomicOperation<S> operation) {
 
-        this.receivedIdentifier = identifier;
-        this.receivedOperation = operation;
+		this.receivedIdentifier = identifier;
+		this.receivedOperation = operation;
 
-        return (AtomicOperationResult<S>) result;
-    }
+		return (AtomicOperationResult<S>) result;
+	}
 
-    public String getReceivedIdentifier() {
-        return receivedIdentifier;
-    }
+	public String getReceivedIdentifier() {
+		return receivedIdentifier;
+	}
 
-    public AtomicOperation<?> getReceivedOperation() {
-        return receivedOperation;
-    }
+	public AtomicOperation<?> getReceivedOperation() {
+		return receivedOperation;
+	}
 }

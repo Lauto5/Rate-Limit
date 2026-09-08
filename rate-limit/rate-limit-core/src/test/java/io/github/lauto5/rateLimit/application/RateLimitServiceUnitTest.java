@@ -26,388 +26,387 @@ import io.github.lauto5.rateLimit.testdoubles.StubRateLimitAlgorithm;
 
 class RateLimitServiceUnitTest {
 
-    private static final Instant FIXED_NOW =
-            Instant.parse("2026-01-01T10:00:00Z");
-
-    private static final Duration ONE_MINUTE =
-            Duration.ofMinutes(1);
-
-    private static final int DEFAULT_LIMIT = 10;
-
-    private Clock fixedClock;
-
-    private FixedWindowPolicy standardPolicy;
-
-    private StubRateLimitAlgorithm<
-            FixedWindowState,
-            FixedWindowPolicy> algorithm;
-
-    private FakeRateLimitStore store;
-
-    private RateLimitService<
-            FixedWindowState,
-            FixedWindowPolicy> service;
-
-
-    // ============================================================
-    // SETUP
-    // ============================================================
-
-    @BeforeEach
-    void setUp() {
-
-        fixedClock = Clock.fixed(
-                FIXED_NOW,
-                ZoneOffset.UTC
-        );
-
-        standardPolicy =
-                new FixedWindowPolicy(
-                        DEFAULT_LIMIT,
-                        ONE_MINUTE
-                );
-
-        FixedWindowState state =
-                stateWith(1, FIXED_NOW);
-
-        AlgorithmResult<FixedWindowState> algorithmResult =
-                AlgorithmResult.allowed(
-                        state,
-                        DEFAULT_LIMIT - 1,
-                        FIXED_NOW.plus(ONE_MINUTE),
-                        ONE_MINUTE
-                );
-
-        AtomicOperationResult<FixedWindowState> operationResult =
-                operationResult(
-                        FIXED_NOW.plus(ONE_MINUTE),
-                        algorithmResult
-                );
-
-        algorithm =
-                new StubRateLimitAlgorithm<>(
-                        state,
-                        algorithmResult
-                );
-
-        store =
-                new FakeRateLimitStore(
-                        operationResult
-                );
-
-        service =
-                new RateLimitService<>(
-                        store,
-                        algorithm,
-                        fixedClock
-                );
-    }
+	private static final Instant FIXED_NOW =
+			Instant.parse("2026-01-01T10:00:00Z");
+
+	private static final Duration ONE_MINUTE =
+			Duration.ofMinutes(1);
+
+	private static final int DEFAULT_LIMIT = 10;
+
+	private Clock fixedClock;
+
+	private FixedWindowPolicy standardPolicy;
+
+	private StubRateLimitAlgorithm<
+			FixedWindowState,
+			FixedWindowPolicy> algorithm;
+
+	private FakeRateLimitStore store;
+
+	private RateLimitService<
+			FixedWindowState,
+			FixedWindowPolicy> service;
+
+
+	// ============================================================
+	// SETUP
+	// ============================================================
+
+	@BeforeEach
+	void setUp() {
+
+		fixedClock = Clock.fixed(
+				FIXED_NOW,
+				ZoneOffset.UTC
+		);
+
+		standardPolicy =
+				new FixedWindowPolicy(
+						DEFAULT_LIMIT,
+						ONE_MINUTE
+				);
+
+		FixedWindowState state =
+				stateWith(1, FIXED_NOW);
+
+		AlgorithmResult<FixedWindowState> algorithmResult =
+				AlgorithmResult.allowed(
+						state,
+						DEFAULT_LIMIT - 1,
+						FIXED_NOW.plus(ONE_MINUTE),
+						ONE_MINUTE
+				);
+
+		AtomicOperationResult<FixedWindowState> operationResult =
+				operationResult(
+						FIXED_NOW.plus(ONE_MINUTE),
+						algorithmResult
+				);
+
+		algorithm =
+				new StubRateLimitAlgorithm<>(
+						state,
+						algorithmResult
+				);
+
+		store =
+				new FakeRateLimitStore(
+						operationResult
+				);
+
+		service =
+				new RateLimitService<>(
+						store,
+						algorithm,
+						fixedClock
+				);
+	}
 
-
-    // ============================================================
-    // HELPERS
-    // ============================================================
+
+	// ============================================================
+	// HELPERS
+	// ============================================================
 
-    private FixedWindowState stateWith(
-            int count,
-            Instant windowStart) {
+	private FixedWindowState stateWith(
+			int count,
+			Instant windowStart) {
 
-        return new FixedWindowState(
-                count,
-                windowStart
-        );
-    }
+		return new FixedWindowState(
+				count,
+				windowStart
+		);
+	}
 
-    private AtomicOperationResult<FixedWindowState> operationResult(
-            Instant expiresAt,
-            AlgorithmResult<FixedWindowState> algorithmResult) {
+	private AtomicOperationResult<FixedWindowState> operationResult(
+			Instant expiresAt,
+			AlgorithmResult<FixedWindowState> algorithmResult) {
 
-        return new AtomicOperationResult<>(
-                expiresAt,
-                algorithmResult
-        );
-    }
-    
-    private AlgorithmResult<FixedWindowState> allowedResult(
-            FixedWindowState state,
-            long remaining,
-            Instant resetAt,
-            Duration expiresIn) {
+		return new AtomicOperationResult<>(
+				expiresAt,
+				algorithmResult
+		);
+	}
+	
+	private AlgorithmResult<FixedWindowState> allowedResult(
+			FixedWindowState state,
+			long remaining,
+			Instant resetAt,
+			Duration expiresIn) {
 
-        return AlgorithmResult.allowed(
-                state,
-                (int) remaining,
-                resetAt,
-                expiresIn
-        );
-    }
+		return AlgorithmResult.allowed(
+				state,
+				(int) remaining,
+				resetAt,
+				expiresIn
+		);
+	}
 
-    private AlgorithmResult<FixedWindowState> deniedResult(
-            FixedWindowState state,
-            Duration retryAfter,
-            Instant resetAt,
-            Duration expiresIn) {
+	private AlgorithmResult<FixedWindowState> deniedResult(
+			FixedWindowState state,
+			Duration retryAfter,
+			Instant resetAt,
+			Duration expiresIn) {
 
-        return AlgorithmResult.denied(
-                state,
-                retryAfter,
-                resetAt,
-                expiresIn
-        );
-    }
+		return AlgorithmResult.denied(
+				state,
+				retryAfter,
+				resetAt,
+				expiresIn
+		);
+	}
 
 
-    // ============================================================
-    // TESTS
-    // ============================================================
+	// ============================================================
+	// TESTS
+	// ============================================================
 
-    @Nested
-    class BasicCases {
+	@Nested
+	class BasicCases {
 
-        @Test
-        void useShouldExecuteStoreOperation() {
+		@Test
+		void useShouldExecuteStoreOperation() {
 
-            // Arrange
+			// Arrange
 
-            String identifier = "user-1";
+			String identifier = "user-1";
 
-            // Act
+			// Act
 
-            service.execute(
-                    identifier,
-                    standardPolicy
-            );
+			service.execute(
+					identifier,
+					standardPolicy
+			);
 
-            // Assert
+			// Assert
 
-            assertEquals(
-                    identifier,
-                    store.getReceivedIdentifier()
-            );
+			assertEquals(
+					identifier,
+					store.getReceivedIdentifier()
+			);
 
-            assertNotNull(
-                    store.getReceivedOperation()
-            );
-        }
+			assertNotNull(
+					store.getReceivedOperation()
+			);
+		}
 
 
-        @Test
-        void useShouldUseInjectedClock() {
+		@Test
+		void useShouldUseInjectedClock() {
 
-            // Arrange
+			// Arrange
 
-            String identifier = "user-1";
+			String identifier = "user-1";
 
-            // Act
+			// Act
 
-            service.execute(
-                    identifier,
-                    standardPolicy
-            );
+			service.execute(
+					identifier,
+					standardPolicy
+			);
 
-            // Assert
+			// Assert
 
-            AtomicOperation<?> operation =
-                    store.getReceivedOperation();
+			AtomicOperation<?> operation =
+					store.getReceivedOperation();
 
-            assertNotNull(operation);
+			assertNotNull(operation);
 
-            assertEquals(
-                    FIXED_NOW,
-                    operation.getNow()
-            );
-        }
+			assertEquals(
+					FIXED_NOW,
+					operation.getNow()
+			);
+		}
 
 
-        @Test
-        void useShouldPassPolicyToAtomicOperation() {
+		@Test
+		void useShouldPassPolicyToAtomicOperation() {
 
-            // Arrange
+			// Arrange
 
-            String identifier = "user-1";
+			String identifier = "user-1";
 
-            // Act
+			// Act
 
-            service.execute(
-                    identifier,
-                    standardPolicy
-            );
+			service.execute(
+					identifier,
+					standardPolicy
+			);
 
-            // Assert
+			// Assert
 
-            AtomicOperation<?> operation =
-                    store.getReceivedOperation();
+			AtomicOperation<?> operation =
+					store.getReceivedOperation();
 
-            assertNotNull(operation);
+			assertNotNull(operation);
 
-            /*
-             * La policy queda encapsulada dentro de
-             * RateLimitAtomicOperation.
-             *
-             * Si expones getPolicy(), podemos verificar
-             * directamente que sea la misma instancia.
-             */
-        }
+			/*
+			 * The policy is encapsulated inside RateLimitAtomicOperation.
+			 *
+			 * If getPolicy() is exposed, we can directly verify
+			 * that it is the same instance.
+			 */
+		}
 
 
-        @Test
-        void useShouldReturnMappedResult() {
+		@Test
+		void useShouldReturnMappedResult() {
 
-            // Arrange
+			// Arrange
 
-            String identifier = "user-1";
+			String identifier = "user-1";
 
-            // Act
+			// Act
 
-            RateLimitResult result =
-                    service.execute(
-                            identifier,
-                            standardPolicy
-                    );
+			RateLimitResult result =
+					service.execute(
+							identifier,
+							standardPolicy
+					);
 
-            // Assert
+			// Assert
 
-            assertNotNull(result);
+			assertNotNull(result);
 
-            /*
-             * Las assertions concretas dependen del contrato
-             * actual de RateLimitResult.
-             */
-        }
-    
-    @Test
-    void useShouldReturnAllowedResult() {
+			/*
+			 * The concrete assertions depend on the current
+			 * RateLimitResult contract.
+			 */
+		}
+	
+	@Test
+	void useShouldReturnAllowedResult() {
 
-        // Arrange
+		// Arrange
 
-        FixedWindowState state =
-                stateWith(1, FIXED_NOW);
+		FixedWindowState state =
+				stateWith(1, FIXED_NOW);
 
-        int remaining = 9;
+		int remaining = 9;
 
-        Instant resetAt =
-                FIXED_NOW.plus(ONE_MINUTE);
+		Instant resetAt =
+				FIXED_NOW.plus(ONE_MINUTE);
 
-        AlgorithmResult<FixedWindowState> algorithmResult =
-                allowedResult(
-                        state,
-                        remaining,
-                        resetAt,
-                        ONE_MINUTE
-                );
+		AlgorithmResult<FixedWindowState> algorithmResult =
+				allowedResult(
+						state,
+						remaining,
+						resetAt,
+						ONE_MINUTE
+				);
 
-        AtomicOperationResult<FixedWindowState> operationResult =
-                operationResult(
-                        resetAt,
-                        algorithmResult
-                );
+		AtomicOperationResult<FixedWindowState> operationResult =
+				operationResult(
+						resetAt,
+						algorithmResult
+				);
 
-        store =
-                new FakeRateLimitStore(operationResult);
+		store =
+				new FakeRateLimitStore(operationResult);
 
-        service =
-                new RateLimitService<>(
-                        store,
-                        algorithm,
-                        fixedClock
-                );
+		service =
+				new RateLimitService<>(
+						store,
+						algorithm,
+						fixedClock
+				);
 
-        // Act
+		// Act
 
-        RateLimitResult result =
-                service.execute(
-                        "user-1",
-                        standardPolicy
-                );
+		RateLimitResult result =
+				service.execute(
+						"user-1",
+						standardPolicy
+				);
 
-        // Assert
+		// Assert
 
-        assertTrue(result.isAllowed());
+		assertTrue(result.isAllowed());
 
-        assertEquals(
-                remaining,
-                result.getRemaining()
-        );
+		assertEquals(
+				remaining,
+				result.getRemaining()
+		);
 
-        assertTrue(
-                !result.getRetryAfter().isPresent()
-        );
+		assertTrue(
+				!result.getRetryAfter().isPresent()
+		);
 
-        assertEquals(
-                resetAt,
-                result.getResetAt()
-        );
-    }
-    
-    @Test
-    void useShouldReturnDeniedResult() {
+		assertEquals(
+				resetAt,
+				result.getResetAt()
+		);
+	}
+	
+	@Test
+	void useShouldReturnDeniedResult() {
 
-        // Arrange
+		// Arrange
 
-        FixedWindowState state =
-                stateWith(10, FIXED_NOW);
+		FixedWindowState state =
+				stateWith(10, FIXED_NOW);
 
-        Duration retryAfter =
-                Duration.ofSeconds(30);
+		Duration retryAfter =
+				Duration.ofSeconds(30);
 
-        Instant resetAt =
-                FIXED_NOW.plus(ONE_MINUTE);
+		Instant resetAt =
+				FIXED_NOW.plus(ONE_MINUTE);
 
-        AlgorithmResult<FixedWindowState> algorithmResult =
-                deniedResult(
-                        state,
-                        retryAfter,
-                        resetAt,
-                        ONE_MINUTE
-                );
+		AlgorithmResult<FixedWindowState> algorithmResult =
+				deniedResult(
+						state,
+						retryAfter,
+						resetAt,
+						ONE_MINUTE
+				);
 
-        AtomicOperationResult<FixedWindowState> operationResult =
-                operationResult(
-                        resetAt,
-                        algorithmResult
-                );
+		AtomicOperationResult<FixedWindowState> operationResult =
+				operationResult(
+						resetAt,
+						algorithmResult
+				);
 
-        store =
-                new FakeRateLimitStore(operationResult);
+		store =
+				new FakeRateLimitStore(operationResult);
 
-        service =
-                new RateLimitService<>(
-                        store,
-                        algorithm,
-                        fixedClock
-                );
+		service =
+				new RateLimitService<>(
+						store,
+						algorithm,
+						fixedClock
+				);
 
-        // Act
+		// Act
 
-        RateLimitResult result =
-                service.execute(
-                        "user-1",
-                        standardPolicy
-                );
+		RateLimitResult result =
+				service.execute(
+						"user-1",
+						standardPolicy
+				);
 
-        // Assert
+		// Assert
 
-        assertFalse(result.isAllowed());
+		assertFalse(result.isAllowed());
 
-        assertEquals(
-                0,
-                result.getRemaining()
-        );
+		assertEquals(
+				0,
+				result.getRemaining()
+		);
 
-        assertTrue(
-                result.getRetryAfter().isPresent()
-        );
+		assertTrue(
+				result.getRetryAfter().isPresent()
+		);
 
-        assertEquals(
-                retryAfter,
-                result.getRetryAfter().get()
-        );
+		assertEquals(
+				retryAfter,
+				result.getRetryAfter().get()
+		);
 
-        assertEquals(
-                resetAt,
-                result.getResetAt()
-        );
-    }
-    
-    }
+		assertEquals(
+				resetAt,
+				result.getResetAt()
+		);
+	}
+	
+	}
 }

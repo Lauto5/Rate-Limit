@@ -16,83 +16,83 @@ import io.github.lauto5.rateLimit.testdoubles.RecordingLogger;
 
 class LoggerPropagationTest {
 
-    @Test
-    void buildWithLoggerShouldEmitLogEntriesThroughPipeline() {
+	@Test
+	void buildWithLoggerShouldEmitLogEntriesThroughPipeline() {
 
-        // Arrange
+		// Arrange
 
-        RecordingLogger logger = new RecordingLogger();
+		RecordingLogger logger = new RecordingLogger();
 
-        RateLimit<FixedWindowPolicy> rateLimit =
-                RateLimit.build(
-                        Algorithm.fixedWindow(),
-                        Persistence.inMemory(logger),
-                        logger
-                );
+		RateLimit<FixedWindowPolicy> rateLimit =
+				RateLimit.build(
+						Algorithm.fixedWindow(),
+						Persistence.inMemory(logger),
+						logger
+				);
 
-        FixedWindowPolicy policy =
-                new FixedWindowPolicy(
-                        2,
-                        java.time.Duration.ofMinutes(1)
-                );
+		FixedWindowPolicy policy =
+				new FixedWindowPolicy(
+						2,
+						java.time.Duration.ofMinutes(1)
+				);
 
-        // Act
+		// Act
 
-        RateLimitResult allowed = rateLimit.use("user-1", policy);
-        RateLimitResult denied = rateLimit.use("user-1", policy);
-        rateLimit.use("user-1", policy);
+		RateLimitResult allowed = rateLimit.use("user-1", policy);
+		RateLimitResult denied = rateLimit.use("user-1", policy);
+		rateLimit.use("user-1", policy);
 
-        // Assert
+		// Assert
 
-        List<RecordingLogger.Entry> entries = logger.getEntries();
+		List<RecordingLogger.Entry> entries = logger.getEntries();
 
-        assertTrue(entries.size() >= 3, "expected per-request logs");
+		assertTrue(entries.size() >= 3, "expected per-request logs");
 
-        assertTrue(
-                logger.anyMessageContaining("user-1"),
-                "logs should reference the identifier"
-        );
+		assertTrue(
+				logger.anyMessageContaining("user-1"),
+				"logs should reference the identifier"
+		);
 
-        assertTrue(
-                logger.anyMessageContaining("Request allowed"),
-                "expected an allowed-decision debug log"
-        );
+		assertTrue(
+				logger.anyMessageContaining("Request allowed"),
+				"expected an allowed-decision debug log"
+		);
 
-        assertTrue(
-                logger.anyMessageContaining("Request denied"),
-                "expected a denied-decision debug log"
-        );
+		assertTrue(
+				logger.anyMessageContaining("Request denied"),
+				"expected a denied-decision debug log"
+		);
 
-        assertTrue(
-                logger.any(Logger.Level.DEBUG),
-                "expected debug-level logs from the pipeline"
-        );
-    }
+		assertTrue(
+				logger.any(Logger.Level.DEBUG),
+				"expected debug-level logs from the pipeline"
+		);
+	}
 
-    @Test
-    void buildDefaultsToSilentLogger() {
+	@Test
+	void buildDefaultsToSilentLogger() {
 
-        // Arrange
+		// Arrange
 
-        RateLimit<FixedWindowPolicy> rateLimit =
-                RateLimit.build(
-                        Algorithm.fixedWindow(),
-                        Persistence.inMemory()
-                );
+		RateLimit<FixedWindowPolicy> rateLimit =
+				RateLimit.build(
+						Algorithm.fixedWindow(),
+						Persistence.inMemory()
+				);
 
-        FixedWindowPolicy policy =
-                new FixedWindowPolicy(
-                        2,
-                        java.time.Duration.ofMinutes(1)
-                );
+		FixedWindowPolicy policy =
+				new FixedWindowPolicy(
+						2,
+						java.time.Duration.ofMinutes(1)
+				);
 
-        // Act - should produce no output and no error
+		// Act - should produce no output and no error
 
-        RateLimitResult result =
-                rateLimit.use("user-1", policy);
+		RateLimitResult result =
+				rateLimit.use("user-1", policy);
 
-        // Assert
+		// Assert
 
-        assertTrue(result.isAllowed());
-    }
+		assertTrue(result.isAllowed());
+	}
 }

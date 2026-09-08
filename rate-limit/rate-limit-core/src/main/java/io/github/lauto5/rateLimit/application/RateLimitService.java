@@ -25,12 +25,12 @@ import io.github.lauto5.rateLimit.logging.NoOpLogger;
  * @param <S> the concrete algorithm state type
  * @param <P> the concrete policy type
  */
-public final class RateLimitService<S extends AlgorithmState , P extends RateLimitPolicy> implements RateLimitExecutor<P>{
+public final class RateLimitService<S extends AlgorithmState, P extends RateLimitPolicy> implements RateLimitExecutor<P> {
 
-    private final RateLimitStore store;
-    private final RateLimitAlgorithm<S, P> algorithm;
-    private final Clock clock;
-    private final Logger logger;
+	private final RateLimitStore store;
+	private final RateLimitAlgorithm<S, P> algorithm;
+	private final Clock clock;
+	private final Logger logger;
 
 	/**
 	 * Creates a rate-limit service.
@@ -68,24 +68,24 @@ public final class RateLimitService<S extends AlgorithmState , P extends RateLim
 		logger.debug("Evaluating rate limit for identifier '"
 				+ identifier + "' with policy " + policy.getClass().getSimpleName());
 
-	    AlgorithmContext context =
-	            new AlgorithmContext(Instant.now(clock));
+		AlgorithmContext context =
+				new AlgorithmContext(Instant.now(clock));
 
-        RateLimitAtomicOperation<S, P> operation =new RateLimitAtomicOperation<S,P>(algorithm,policy,context, logger);
+		RateLimitAtomicOperation<S, P> operation = new RateLimitAtomicOperation<S, P>(algorithm, policy, context, logger);
 
-        AtomicOperationResult<S> result =
-                store.executeAtomically(identifier, operation);
+		AtomicOperationResult<S> result =
+				store.executeAtomically(identifier, operation);
 
-        RateLimitResult mapped = RateLimitResultMapper.fromAtomicOperationResult(result);
+		RateLimitResult mapped = RateLimitResultMapper.fromAtomicOperationResult(result);
 
-        if (mapped.isAllowed()) {
-        	logger.debug("Request allowed for identifier '" + identifier
-        			+ "' - remaining: " + mapped.getRemaining());
-        } else {
-        	logger.debug("Request denied for identifier '" + identifier
-        			+ "' - retry after: " + mapped.getRetryAfter().map(Object::toString).orElse("n/a"));
-        }
+		if (mapped.isAllowed()) {
+			logger.debug("Request allowed for identifier '" + identifier
+					+ "' - remaining: " + mapped.getRemaining());
+		} else {
+			logger.debug("Request denied for identifier '" + identifier
+					+ "' - retry after: " + mapped.getRetryAfter().map(Object::toString).orElse("n/a"));
+		}
 
-        return mapped;
+		return mapped;
 	}
 }

@@ -43,7 +43,8 @@ public final class FakeAtomicOperation<S extends AlgorithmState> implements Atom
 
 	@Override
 	public StateCodec<S> getCodec() {
-		// TODO Auto-generated method stub
-		return null;
+		throw new UnsupportedOperationException(
+				"FakeAtomicOperation does not provide a state codec; it is only used with stores that do not serialize state"
+		);
 	}
 }

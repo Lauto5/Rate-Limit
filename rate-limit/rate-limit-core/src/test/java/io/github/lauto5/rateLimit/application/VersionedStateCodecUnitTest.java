@@ -56,7 +56,7 @@ class VersionedStateCodecUnitTest {
 	@Test
 	void decodeShouldNormalizeDelegateFailuresAsCorruptedState() {
 
-		// Arrange - el header es valido pero el codec delegado no puede interpretar el payload
+		// Arrange - the header is valid but the delegate codec cannot parse the payload
 		VersionedStateCodec<FakeState> throwing = new VersionedStateCodec<>(new StateCodec<FakeState>() {
 
 			@Override
@@ -72,8 +72,8 @@ class VersionedStateCodecUnitTest {
 
 		byte[] faked = new byte[] { 'R', 'L', 0x01, 'x', 'y' };
 
-		// Act & Assert - el fallo del codec concreto se normaliza a CorruptedStateException
-		// para que el store pueda aplicar su politica fail-open (tratar como inexistente)
+		// Act & Assert - a failure in the concrete codec is normalized to CorruptedStateException
+		// so the store can apply its fail-open policy (treat the state as missing)
 		CorruptedStateException thrown = assertThrows(CorruptedStateException.class,
 				() -> throwing.decode(faked));
 		assertEquals(NumberFormatException.class, thrown.getCause().getClass());

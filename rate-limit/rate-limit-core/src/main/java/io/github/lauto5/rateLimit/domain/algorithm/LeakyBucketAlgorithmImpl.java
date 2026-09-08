@@ -18,7 +18,7 @@ import io.github.lauto5.rateLimit.domain.policies.LeakyBucketPolicy;
  * State is serialized as a UTF-8 string containing the current water level and the timestamp
  * of the last leak in epoch milliseconds.
  */
-public class LeakyBucketAlgorithmImpl implements LeakyBucketAlgorithm {
+public final class LeakyBucketAlgorithmImpl implements LeakyBucketAlgorithm {
 
 	private static final StateCodec<LeakyBucketState> CODEC = new StateCodec<LeakyBucketState>() {
 

@@ -6,7 +6,7 @@ package io.github.lauto5.rateLimit.domain.algorithmState;
  * <p>Holds the theoretical arrival time (TAT) of the next request, expressed in epoch
  * milliseconds.
  */
-public class GcraState implements AlgorithmState {
+public final class GcraState implements AlgorithmState {
 
 	private final long tat;
 

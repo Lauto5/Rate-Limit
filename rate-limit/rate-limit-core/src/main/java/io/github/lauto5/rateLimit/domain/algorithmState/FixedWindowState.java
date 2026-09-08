@@ -8,7 +8,7 @@ import java.time.Instant;
  * <p>Holds the number of requests counted within the current window and the instant at which
  * the window started.
  */
-public class FixedWindowState implements AlgorithmState {
+public final class FixedWindowState implements AlgorithmState {
 
 	private final int count;
 	
@@ -18,15 +18,15 @@ public class FixedWindowState implements AlgorithmState {
 		
 		super();
 		
-        if (count < 0) {
-            throw new IllegalArgumentException(
-                "Count cannot be negative, got: " + count
-            );
-        }
-        
-        if (windowStart == null) {
-            throw new IllegalArgumentException("WindowStart cannot be null");
-        }
+		if (count < 0) {
+			throw new IllegalArgumentException(
+				"Count cannot be negative, got: " + count
+			);
+		}
+		
+		if (windowStart == null) {
+			throw new IllegalArgumentException("WindowStart cannot be null");
+		}
 		
 		this.count = count;
 		this.windowStart = windowStart;

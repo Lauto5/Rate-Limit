@@ -12,16 +12,16 @@ import io.github.lauto5.rateLimit.logging.ConsoleLogger;
 import io.github.lauto5.rateLimit.redis.Persistence;
 
 /**
- * Ejemplo de uso de la libreria con persistencia en Redis.
+ * Example of using the library with Redis persistence.
  *
- * <p>Demuestra la combinacion de dependencias:
+ * <p>Shows the combination of dependencies:
  *
  * <pre>
  * rate-limit-core
  * rate-limit-redis
  * </pre>
  *
- * <p>Requiere un servidor Redis accesible en {@code redis://localhost:6379}. Para ejecutarlo:
+ * <p>Requires a Redis server reachable at {@code redis://localhost:6379}. To run it:
  *
  * <pre>
  * mvn -f examples/core-redis compile exec:java
@@ -30,7 +30,7 @@ import io.github.lauto5.rateLimit.redis.Persistence;
 public final class RedisExample {
 
 	private RedisExample() {
-		// utilidad
+		// utility
 	}
 
 	public static void main(String[] args) {

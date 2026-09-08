@@ -58,7 +58,7 @@ public final class StoreState<T extends AlgorithmState> {
 	 * @return {@code true} if {@code now} is on or after the expiry instant
 	 */
 	public boolean isExpired(Instant now) {
-	    return !now.isBefore(expiresAt);
+		return !now.isBefore(expiresAt);
 	}
 
 }

@@ -15,8 +15,34 @@ public final class SlidingWindowLogPolicy implements RateLimitPolicy {
 	
 	public SlidingWindowLogPolicy(int limit, Duration windowSize) {
 		super();
+
+		validateLimit(limit);
+		validateWindowSize(windowSize);
+
 		this.limit = limit;
 		this.windowSize = windowSize;
+	}
+
+	private void validateLimit(int limit) {
+
+		if (limit <= 0) {
+			throw new IllegalArgumentException("Limit must be greater than 0, got: " + limit);
+		}
+	}
+
+	private void validateWindowSize(Duration windowSize) {
+
+		if (windowSize == null) {
+			throw new IllegalArgumentException("WindowSize cannot be null");
+		}
+
+		if (windowSize.isNegative() || windowSize.isZero()) {
+			throw new IllegalArgumentException("WindowSize must be positive, got: " + windowSize);
+		}
+
+		if (windowSize.toMillis() < 1000) {
+			throw new IllegalArgumentException("WindowSize must be at least 1 second, got: " + windowSize);
+		}
 	}
 
 	public int getLimit() {

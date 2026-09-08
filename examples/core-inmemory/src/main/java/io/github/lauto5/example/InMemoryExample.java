@@ -12,16 +12,16 @@ import io.github.lauto5.rateLimit.application.ports.out.RateLimitStore;
 import io.github.lauto5.rateLimit.inmemory.Persistence;
 
 /**
- * Ejemplo de uso de la libreria con persistencia en memoria.
+ * Example of using the library with in-memory persistence.
  *
- * <p>Demuestra la combinacion minima de dependencias:
+ * <p>Shows the minimal combination of dependencies:
  *
  * <pre>
  * rate-limit-core
  * rate-limit-inmemory
  * </pre>
  *
- * <p>Para ejecutarlo:
+ * <p>To run it:
  *
  * <pre>
  * mvn -f examples/core-inmemory compile exec:java
@@ -30,7 +30,7 @@ import io.github.lauto5.rateLimit.inmemory.Persistence;
 public final class InMemoryExample {
 
 	private InMemoryExample() {
-		// utilidad
+		// utility
 	}
 
 	public static void main(String[] args) {

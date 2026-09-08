@@ -30,7 +30,7 @@ public class LeakyBucketAlgorithmImplUnitTest {
 	@BeforeEach
 	void setUp() {
 		algorithm = new LeakyBucketAlgorithmImpl();
-		standardPolicy = new LeakyBucketPolicy(5.0, 1.0); // capacidad 5, drena 1/seg
+		standardPolicy = new LeakyBucketPolicy(5.0, 1.0); // capacity 5, drains 1/sec
 		fixedNow = Instant.parse("2026-01-01T10:00:00Z");
 	}
 
@@ -161,7 +161,7 @@ public class LeakyBucketAlgorithmImplUnitTest {
 
 			// Arrange
 			LeakyBucketState initialState = stateWith(1.0, fixedNow);
-			AlgorithmContext context = contextAt(fixedNow.plusSeconds(10)); // drenaria 10, mas de lo que hay
+			AlgorithmContext context = contextAt(fixedNow.plusSeconds(10)); // would drain 10, more than available
 
 			// Act
 			AlgorithmResult<LeakyBucketState> result = executeAlgorithm(initialState, context);
@@ -169,7 +169,7 @@ public class LeakyBucketAlgorithmImplUnitTest {
 			// Assert
 			AllowedDecision decision = extractAllowed(result);
 
-			assertEquals(1.0, result.getState().getWater()); // 0 (piso) + 1 de esta request
+			assertEquals(1.0, result.getState().getWater()); // 0 (floor) + 1 from this request
 			assertEquals(4, decision.getRemaining());
 
 		}
@@ -276,9 +276,9 @@ public class LeakyBucketAlgorithmImplUnitTest {
 		void retryAfterShouldMatchExcessWaterDividedByLeakRate() {
 
 			// Arrange
-			LeakyBucketState initialState = stateWith(7.0, fixedNow); // por encima de la capacidad
+			LeakyBucketState initialState = stateWith(7.0, fixedNow); // above capacity
 			AlgorithmContext context = contextAt(fixedNow);
-			Duration expectedRetryAfter = Duration.ofSeconds(3); // excedente=3, leakRate=1/seg
+			Duration expectedRetryAfter = Duration.ofSeconds(3); // excess=3, leakRate=1/sec
 
 			// Act
 			AlgorithmResult<LeakyBucketState> result = executeAlgorithm(initialState, context);
@@ -295,7 +295,7 @@ public class LeakyBucketAlgorithmImplUnitTest {
 			// Arrange
 			LeakyBucketState initialState = stateWith(0.0, fixedNow);
 			AlgorithmContext context = contextAt(fixedNow);
-			Duration expectedExpireIn = Duration.ofSeconds(1); // newWater=1, leakRate=1/seg
+			Duration expectedExpireIn = Duration.ofSeconds(1); // newWater=1, leakRate=1/sec
 
 			// Act
 			AlgorithmResult<LeakyBucketState> result = executeAlgorithm(initialState, context);
@@ -404,7 +404,7 @@ public class LeakyBucketAlgorithmImplUnitTest {
 		void shouldRespectCustomLeakRate() {
 
 			// Arrange
-			LeakyBucketPolicy customPolicy = policyWith(5.0, 2.0); // 2/seg
+			LeakyBucketPolicy customPolicy = policyWith(5.0, 2.0); // 2/sec
 			LeakyBucketState initialState = stateWith(5.0, fixedNow);
 			AlgorithmContext context = contextAt(fixedNow.plusSeconds(1));
 
@@ -421,7 +421,7 @@ public class LeakyBucketAlgorithmImplUnitTest {
 		void shouldRespectSlowLeakRate() {
 
 			// Arrange
-			LeakyBucketPolicy customPolicy = policyWith(5.0, 0.5); // 0.5/seg
+			LeakyBucketPolicy customPolicy = policyWith(5.0, 0.5); // 0.5/sec
 			LeakyBucketState initialState = stateWith(5.0, fixedNow);
 			AlgorithmContext context = contextAt(fixedNow.plusSeconds(2));
 
@@ -467,14 +467,14 @@ public class LeakyBucketAlgorithmImplUnitTest {
 			LeakyBucketState state = stateWith(0.0, fixedNow);
 			AlgorithmContext context = contextAt(fixedNow);
 
-			// Act & Assert - Llenar el balde hasta la capacidad (5)
+			// Act & Assert - Fill the bucket up to capacity (5)
 			for (int i = 1; i <= 5; i++) {
 				AlgorithmResult<LeakyBucketState> result = executeAlgorithm(state, context);
 				assertTrue(result.isAllowed(), "Request " + i + " should be allowed");
 				state = result.getState();
 			}
 
-			// Request 6 - Debe ser denegada
+			// Request 6 - must be denied
 			AlgorithmResult<LeakyBucketState> deniedResult = executeAlgorithm(state, context);
 			assertFalse(deniedResult.isAllowed(), "Request 6 should be denied");
 
@@ -487,12 +487,12 @@ public class LeakyBucketAlgorithmImplUnitTest {
 			LeakyBucketState state = stateWith(5.0, fixedNow);
 			AlgorithmContext fullContext = contextAt(fixedNow);
 
-			// Act - Solicitud sin espacio disponible
+			// Act - Request with no space available
 			AlgorithmResult<LeakyBucketState> deniedResult = executeAlgorithm(state, fullContext);
 			assertFalse(deniedResult.isAllowed(), "Should be denied when bucket is full");
 			state = deniedResult.getState();
 
-			// Act - Pasan 5 segundos, drena 5 unidades
+			// Act - 5 seconds pass, 5 units drain
 			AlgorithmContext drainedContext = contextAt(fixedNow.plusSeconds(5));
 			AlgorithmResult<LeakyBucketState> allowedResult = executeAlgorithm(state, drainedContext);
 

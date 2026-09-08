@@ -216,8 +216,8 @@ public class SlidingWindowLogAlgorithmImplUnitTest {
 		void timestampExactlyAtWindowStartShouldBeExcluded() {
 
 			// Arrange
-			// Un timestamp registrado hace EXACTAMENTE windowSize
-			// ya no debe contar dentro de la ventana.
+			// A timestamp registered EXACTLY windowSize ago
+			// must no longer count within the window.
 			SlidingWindowLogState initialState = stateWithNTimestampsAt(5, fixedNow.minusSeconds(60));
 			AlgorithmContext context = contextAt(fixedNow);
 
@@ -364,7 +364,7 @@ public class SlidingWindowLogAlgorithmImplUnitTest {
 			// Arrange
 			SlidingWindowLogState initialState = stateWithTimestampsAt(
 					fixedNow.minusSeconds(10),
-					fixedNow.minusSeconds(45), // el mas viejo -> determina el retryAfter
+					fixedNow.minusSeconds(45), // the oldest one -> determines retryAfter
 					fixedNow.minusSeconds(20),
 					fixedNow.minusSeconds(5),
 					fixedNow.minusSeconds(1)
@@ -463,7 +463,7 @@ public class SlidingWindowLogAlgorithmImplUnitTest {
 
 			// Arrange
 			SlidingWindowLogPolicy customPolicy = policyWith(5, Duration.ofSeconds(30));
-			SlidingWindowLogState initialState = stateWithTimestampsAt(fixedNow.minusSeconds(40)); // fuera de 30s
+			SlidingWindowLogState initialState = stateWithTimestampsAt(fixedNow.minusSeconds(40)); // outside 30s
 
 			AlgorithmContext context = contextAt(fixedNow);
 
@@ -513,14 +513,14 @@ public class SlidingWindowLogAlgorithmImplUnitTest {
 			SlidingWindowLogState state = stateWith(new ArrayList<>());
 			AlgorithmContext context = contextAt(fixedNow);
 
-			// Act & Assert - Consumir el limite de 5
+			// Act & Assert - Consume the limit of 5
 			for (int i = 1; i <= 5; i++) {
 				AlgorithmResult<SlidingWindowLogState> result = executeAlgorithm(state, context);
 				assertTrue(result.isAllowed(), "Request " + i + " should be allowed");
 				state = result.getState();
 			}
 
-			// Request 6 - Debe ser denegada
+			// Request 6 - must be denied
 			AlgorithmResult<SlidingWindowLogState> deniedResult = executeAlgorithm(state, context);
 			assertFalse(deniedResult.isAllowed(), "Request 6 should be denied");
 
@@ -538,11 +538,11 @@ public class SlidingWindowLogAlgorithmImplUnitTest {
 				state = result.getState();
 			}
 
-			// Act - Todavia dentro de la ventana, debe denegar
+			// Act - Still within the window, must deny
 			AlgorithmResult<SlidingWindowLogState> stillDenied = executeAlgorithm(state, context);
 			assertFalse(stillDenied.isAllowed(), "Should still be denied within the same window");
 
-			// Act - Pasan 61s, el timestamp mas antiguo ya salio de la ventana
+			// Act - 61s pass, the oldest timestamp has slid out of the window
 			AlgorithmContext laterContext = contextAt(fixedNow.plusSeconds(61));
 			AlgorithmResult<SlidingWindowLogState> laterResult = executeAlgorithm(state, laterContext);
 
@@ -568,11 +568,11 @@ public class SlidingWindowLogAlgorithmImplUnitTest {
 			DeniedDecision decision = extractDenied(deniedResult);
 			Duration retryAfter = decision.getRetryAfter();
 
-			// Act - Un milisegundo antes de retryAfter, sigue denegado
+			// Act - One millisecond before retryAfter, still denied
 			AlgorithmContext justBeforeContext = contextAt(fixedNow.plus(retryAfter).minusMillis(1));
 			AlgorithmResult<SlidingWindowLogState> justBeforeResult = executeAlgorithm(state, justBeforeContext);
 
-			// Act - Exactamente en retryAfter, ya permite
+			// Act - Exactly at retryAfter, already allows
 			AlgorithmContext exactContext = contextAt(fixedNow.plus(retryAfter));
 			AlgorithmResult<SlidingWindowLogState> exactResult = executeAlgorithm(state, exactContext);
 
@@ -610,8 +610,8 @@ public class SlidingWindowLogAlgorithmImplUnitTest {
 		void encodeThenDecodeShouldWorkWithEmptyList() {
 
 			// Arrange
-			// Caso critico: split(",") sobre string vacio puede romper
-			// si el codec no tiene el guard correspondiente.
+			// Critical case: split(",") on an empty string can crash
+			// if the codec does not have the corresponding guard.
 			StateCodec<SlidingWindowLogState> codec = algorithm.getCodec();
 			SlidingWindowLogState original = stateWith(new ArrayList<>());
 

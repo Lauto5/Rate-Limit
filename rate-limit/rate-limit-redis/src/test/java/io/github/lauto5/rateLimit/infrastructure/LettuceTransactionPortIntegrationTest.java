@@ -130,7 +130,7 @@ public class LettuceTransactionPortIntegrationTest {
 		String key = uniqueKey();
 		transactionPort.executeTransaction(key, current -> write("initial-value", 60_000L));
 
-		// Act - transaccion directa: watch -> body -> exec
+		// Act - direct transaction: watch -> body -> exec
 		String result = transactionPort.executeTransaction(key, current -> {
 			assertArrayEquals(bytesOf("initial-value"), current);
 			return write("updated-value", 60_000L);
@@ -148,7 +148,7 @@ public class LettuceTransactionPortIntegrationTest {
 		// Arrange
 		String key = uniqueKey();
 
-		// A observa la key (ausente) y queda bloqueada dentro del body mientras B escribe
+		// A observes the key (missing) and stays blocked inside the body while B writes
 		CountDownLatch bodyEntered = new CountDownLatch(1);
 		CountDownLatch releaseBody = new CountDownLatch(1);
 
@@ -170,10 +170,10 @@ public class LettuceTransactionPortIntegrationTest {
 		assertTrue(bodyEntered.await(10, TimeUnit.SECONDS), "A debio entrar al body");
 		assertNull(transactionPort.get(key));
 
-		// B (otra conexion) escribe el valor mientras A sigue en transaccion
+		// B (another connection) writes the value while A is still in the transaction
 		secondPort.executeTransaction(key, current -> write("winner-value", 60_000L));
 
-		// Liberamos a A: su EXEC debe abortar porque la key cambio
+		// Release A: its EXEC must abort because the key changed
 		releaseBody.countDown();
 
 		// Assert
@@ -197,13 +197,13 @@ public class LettuceTransactionPortIntegrationTest {
 		// Act
 		transactionPort.executeTransaction(key, current -> new TransactionWrite<>(bytesOf(value), shortTtlMillis, value));
 
-		// Assert - antes de que expire, el valor esta presente
+		// Assert - before it expires, the value is present
 		assertArrayEquals(bytesOf(value), transactionPort.get(key));
 
-		// Act - esperamos a que venza el TTL
+		// Act - wait for the TTL to elapse
 		Thread.sleep(400L);
 
-		// Assert - Redis elimino la key por su cuenta
+		// Assert - Redis removed the key on its own
 		assertNull(transactionPort.get(key));
 
 	}
@@ -214,7 +214,7 @@ public class LettuceTransactionPortIntegrationTest {
 		// Arrange
 		String key = uniqueKey();
 
-		// Act - el body falla tras el WATCH; la excepcion debe propagarse
+		// Act - the body fails after the WATCH; the exception must propagate
 		IllegalStateException thrown = assertThrows(IllegalStateException.class, () ->
 				transactionPort.executeTransaction(key, current -> {
 					throw new IllegalArgumentException("boom");
@@ -225,14 +225,14 @@ public class LettuceTransactionPortIntegrationTest {
 		assertTrue(thrown.getCause() instanceof IllegalArgumentException,
 				"El error real debe conservarse como causa y NO tratarse como conflicto de WATCH");
 
-		// Act - la misma conexion pooled (w WATCH/MULTI residuales limpiados) debe
-		// poder ejecutar una transaccion normal sobre OTRA key
+		// Act - the same pooled connection (with residual WATCH/MULTI cleaned) must
+		// be able to run a normal transaction on ANOTHER key
 		String otherKey = uniqueKey();
 		String value = "after-cleanup";
 		assertEquals(value,
 				transactionPort.executeTransaction(otherKey, current -> write(value, 60_000L)));
 
-		// Assert - y la key fallida no quedo escrita
+		// Assert - and the failed key was not written
 		assertNull(transactionPort.get(key));
 
 	}
@@ -244,9 +244,9 @@ public class LettuceTransactionPortIntegrationTest {
 		void onlyOneThreadShouldWinTheInitialWriteRace() throws Exception {
 
 			// Arrange
-			// Varios threads compiten por CREAR la key (estado observado: ausente).
-			// El primero que hace EXEC crea la key; el resto aborta porque la key
-			// ya no coincide con lo que observaron antes de su EXEC.
+			// Several threads compete to CREATE the key (observed state: missing).
+			// The first one to EXEC creates the key; the rest abort because the key
+			// no longer matches what they observed before their EXEC.
 
 			int threadCount = 10;
 			String key = uniqueKey();
@@ -283,10 +283,10 @@ public class LettuceTransactionPortIntegrationTest {
 		void onlyOneThreadShouldWinWhenReplacingAnExistingValue() throws Exception {
 
 			// Arrange
-			// La key YA existe con un valor conocido y TODOS los threads parten de haber
-			// observado ese mismo valor (como en un CAS anclado): el primero en ejecutar
-			// EXEC reemplaza el valor; los demas deben abortar porque la key ya no
-			// coincide con lo que observaron.
+			// The key ALREADY exists with a known value and ALL threads start from having
+			// observed that same value (like an anchored CAS): the first one to execute
+			// EXEC replaces the value; the rest must abort because the key no longer
+			// matches what they observed.
 
 			int threadCount = 10;
 			String key = uniqueKey();
@@ -302,7 +302,7 @@ public class LettuceTransactionPortIntegrationTest {
 				String candidate = "candidate-" + Thread.currentThread().getId();
 				String committed = transactionPort.executeTransaction(key, current -> {
 					if (!Arrays.equals(current, sharedExpectedValue)) {
-						return null; // la key cambio; esta iteracion aborta sin escribir
+						return null; // the key changed; this iteration aborts without writing
 					}
 					return write(candidate, 60_000L);
 				});
@@ -330,9 +330,9 @@ public class LettuceTransactionPortIntegrationTest {
 		void concurrentIncrementsWithRetryLoopShouldNotLoseUpdates() throws Exception {
 
 			// Arrange
-			// Alta concurrencia: N threads incrementan un contador compartido usando el
-			// patron WATCH -> GET -> retry si aborta (el mismo que usa RedisStore
-			// internamente). Si hubiera perdida de updates, el conteo final seria MENOR.
+			// High concurrency: N threads increment a shared counter using the
+			// WATCH -> GET -> retry-if-aborted pattern (the same one used by RedisStore
+			// internally). If there were lost updates, the final count would be LOWER.
 
 			int threadCount = 50;
 			String key = uniqueKey();
@@ -369,7 +369,7 @@ public class LettuceTransactionPortIntegrationTest {
 			executor.shutdown();
 
 			for (Future<Void> future : futures) {
-				future.get(); // propaga cualquier excepcion ocurrida en los threads
+				future.get(); // propagates any exception that occurred in the threads
 			}
 
 			// Assert

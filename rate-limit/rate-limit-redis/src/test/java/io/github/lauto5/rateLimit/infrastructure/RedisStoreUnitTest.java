@@ -38,7 +38,7 @@ public class RedisStoreUnitTest {
 	private FakeKeyValueStore fakeKeyValueStore;
 	private RedisStore redisStore;
 
-	// Cuenta con el acuerdo key = namespace + ":" + identifier (RedisStore.buildKey)
+	// Relies on the agreement key = namespace + ":" + identifier (RedisStore.buildKey)
 	private static final String NS = RedisStore.DEFAULT_NAMESPACE + ":";
 
 	@BeforeEach
@@ -125,7 +125,7 @@ public class RedisStoreUnitTest {
 	@Test
 	void corruptedStoredStateShouldBeResetAndRewritten() {
 
-		// Arrange - pre-cargamos basura que no sigue el formato versionado
+		// Arrange - pre-load garbage that does not follow the versioned format
 		String identifier = "corrupted-user-" + System.nanoTime();
 		byte[] garbage = "not-a-valid-versioned-state".getBytes(StandardCharsets.UTF_8);
 		fakeKeyValueStore.putRaw(NS + identifier, garbage);
@@ -140,7 +140,7 @@ public class RedisStoreUnitTest {
 		// Act
 		AtomicOperationResult<?> result = redisStore.executeAtomically(identifier, operation);
 
-		// Assert - el estado corrupto se trata como inexistente y se reescribe limpio
+		// Assert - corrupted state is treated as missing and rewritten clean
 		assertTrue(result.getAlgorithmResult().isAllowed());
 		assertTrue(fakeKeyValueStore.exists(NS + identifier));
 
@@ -149,8 +149,8 @@ public class RedisStoreUnitTest {
 	@Test
 	void corruptedPayloadWithValidHeaderShouldBeResetAndRewritten() {
 
-		// Arrange - el header versionado es valido pero el payload del codec concreto es
-		// ilegible: pasa la validacion de cabecera y rompe el decode de FixedWindow
+		// Arrange - the versioned header is valid but the concrete codec payload is
+		// unreadable: it passes the header validation and breaks the FixedWindow decode
 		String identifier = "corrupted-payload-" + System.nanoTime();
 		byte[] header = new byte[] { 'R', 'L', 0x01 };
 		byte[] garbagePayload = "not-a-number|also-not-a-number".getBytes(StandardCharsets.UTF_8);
@@ -166,10 +166,10 @@ public class RedisStoreUnitTest {
 		RateLimitAtomicOperation<?, ?> operation =
 				new RateLimitAtomicOperation<>(algorithm, policy, context);
 
-		// Act - no debe lanzar NumberFormatException: se trata como estado inexistente
+		// Act - must not throw NumberFormatException: treated as missing state
 		AtomicOperationResult<?> result = redisStore.executeAtomically(identifier, operation);
 
-		// Assert - politica fail-open: se reescribe desde cero en lugar de fallar la request
+		// Assert - fail-open policy: rewritten from scratch instead of failing the request
 		assertTrue(result.getAlgorithmResult().isAllowed());
 		assertTrue(fakeKeyValueStore.exists(NS + identifier));
 
@@ -191,7 +191,7 @@ public class RedisStoreUnitTest {
 		// Act
 		redisStore.executeAtomically(identifier, operation);
 
-		// Assert - el TTL persistido es exactamente expiresAt - now
+		// Assert - the persisted TTL is exactly expiresAt - now
 		assertEquals(120_000L, (long) fakeKeyValueStore.getRemainingTtl(NS + identifier));
 
 	}
@@ -229,7 +229,7 @@ public class RedisStoreUnitTest {
 		// Act
 		redisStore.executeAtomically(identifier, operation);
 
-		// Assert - un expiresAt en el pasado se trata como expiracion inmediata, nunca como TTL invalido
+		// Assert - an expiresAt in the past is treated as immediate expiration, never as invalid TTL
 		assertEquals(1L, (long) fakeKeyValueStore.getRemainingTtl(NS + identifier));
 
 	}
@@ -248,12 +248,12 @@ public class RedisStoreUnitTest {
 		// Act
 		redisStore.executeAtomically(identifier, operation);
 
-		// Assert - la conversion a milisegundos trunca a 0; el floor la lleva a 1ms
+		// Assert - the millisecond conversion truncates to 0; the floor brings it to 1ms
 		assertEquals(1L, (long) fakeKeyValueStore.getRemainingTtl(NS + identifier));
 
 	}
 
-	// ==================== Namespace y validacion ====================
+	// ==================== Namespace and validation ====================
 
 	@Test
 	void keysShouldBeNamespacedUnderCustomNamespace() {
@@ -271,7 +271,7 @@ public class RedisStoreUnitTest {
 		// Act
 		store.executeAtomically("alice", operation);
 
-		// Assert - la key se escribe bajo el namespace elegido, no bajo el default
+		// Assert - the key is written under the chosen namespace, not the default one
 		assertTrue(fake.exists("test-app:alice"));
 		assertTrue(!fake.exists(NS + "alice"));
 
@@ -301,7 +301,7 @@ public class RedisStoreUnitTest {
 	@Test
 	void differentNamespacesShouldNeitherCollideNorShareState() {
 
-		// Arrange - dos stores comparten el mismo keyValueStore fisico pero namespace distinto
+		// Arrange - two stores share the same physical keyValueStore but different namespaces
 		FakeKeyValueStore shared = new FakeKeyValueStore();
 		RedisStore storeA = new RedisStore(shared, "app-a");
 		RedisStore storeB = new RedisStore(shared, "app-b");
@@ -313,11 +313,11 @@ public class RedisStoreUnitTest {
 		RateLimitAtomicOperation<?, ?> firstB = new RateLimitAtomicOperation<>(
 				new FixedWindowAlgorithmImpl(), policy, new AlgorithmContext(Instant.now()));
 
-		// Act - cada store consume (y agota) su propia key
+		// Act - each store consumes (and exhausts) its own key
 		assertTrue(storeA.executeAtomically("server-1", firstA).getAlgorithmResult().isAllowed());
 		assertTrue(storeB.executeAtomically("server-1", firstB).getAlgorithmResult().isAllowed());
 
-		// Assert - la segunda operacion de cada store ve su propio contador agotado
+		// Assert - the second operation of each store sees its own exhausted counter
 		RateLimitAtomicOperation<?, ?> secondA = new RateLimitAtomicOperation<>(
 				new FixedWindowAlgorithmImpl(), policy, new AlgorithmContext(Instant.now()));
 		RateLimitAtomicOperation<?, ?> secondB = new RateLimitAtomicOperation<>(
@@ -359,7 +359,7 @@ public class RedisStoreUnitTest {
 
 	}
 
-	// ==================== Infraerror vs conflicto ====================
+	// ==================== Infra error vs conflict ====================
 
 	@Test
 	void infraErrorShouldPropagateWithoutRetrying() {
@@ -376,8 +376,8 @@ public class RedisStoreUnitTest {
 		RuntimeException thrown = assertThrows(RuntimeException.class,
 				() -> store.executeAtomically("infra-error-user", operation));
 
-		// Assert - el error de infraestructura NO se convierte en conflicto WATCH:
-		// se propaga al llamador y no dispara ningun reintento
+		// Assert - the infrastructure error is NOT converted into a WATCH conflict:
+		// it propagates to the caller and does not trigger any retry
 		assertSame(port.failure, thrown);
 		assertEquals(1, port.calls.get());
 		port.close();
@@ -399,8 +399,8 @@ public class RedisStoreUnitTest {
 		IllegalStateException thrown = assertThrows(IllegalStateException.class,
 				() -> store.executeAtomically("contended-user", operation));
 
-		// Assert - el loop de reintentos esta acotado: se agota la cantidad de intentos
-		// en lugar de degradar indefinidamente
+		// Assert - the retry loop is bounded: the attempt budget is exhausted
+		// instead of degrading indefinitely
 		assertTrue(thrown.getMessage().contains("after 25 attempts"));
 		assertEquals(25, port.calls.get());
 		port.close();
@@ -418,15 +418,15 @@ public class RedisStoreUnitTest {
 		StubFixedWindowOperation operation = new StubFixedWindowOperation(
 				now, now.plus(Duration.ofMinutes(1)), true, new FixedWindowState(1, now));
 
-		// Act - el thread llega interrumpido: el primer sleep no-cero lanza
-		// InterruptedException, que debe convertirse en fallo sin tragarse la interrupcion
+		// Act - the thread arrives interrupted: the first non-zero sleep throws
+		// InterruptedException, which must become a failure without swallowing the interruption
 		Thread.currentThread().interrupt();
 		try {
 			assertThrows(IllegalStateException.class,
 					() -> store.executeAtomically("interrupted-user", operation));
 		} finally {
-			// Thread.interrupted() devuelve el valor anterior y lo limpia:
-			// solo pasa si el flag fue restaurado por backoffBeforeRetry
+			// Thread.interrupted() returns the previous value and clears it:
+			// it only passes if the flag was restored by backoffBeforeRetry
 			assertTrue(Thread.interrupted(), "El flag de interrupcion debe conservarse");
 		}
 		port.close();
@@ -436,7 +436,7 @@ public class RedisStoreUnitTest {
 	// ==================== TEST DOUBLES ====================
 
 	/**
-	 * Port que siempre simula un conflicto WATCH (devuelve null).
+	 * Port that always simulates a WATCH conflict (returns null).
 	 */
 	private static final class AlwaysConflictingPort implements RedisTransactionPort {
 
@@ -460,7 +460,7 @@ public class RedisStoreUnitTest {
 	}
 
 	/**
-	 * Port que siempre lanza un error de infraestructura (como una caida de red).
+	 * Port that always throws an infrastructure error (like a network outage).
 	 */
 	private static final class ThrowingPort implements RedisTransactionPort {
 

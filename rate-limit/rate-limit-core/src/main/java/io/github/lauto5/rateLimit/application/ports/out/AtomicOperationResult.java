@@ -16,9 +16,9 @@ import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
  */
 public final class AtomicOperationResult<S extends AlgorithmState> {
 
-    private final Instant expiresAt;
+	private final Instant expiresAt;
 
-    private final AlgorithmResult<S> algorithmResult;
+	private final AlgorithmResult<S> algorithmResult;
 
 	/**
 	 * Creates an atomic-operation result.
@@ -45,20 +45,20 @@ public final class AtomicOperationResult<S extends AlgorithmState> {
 	public AlgorithmResult<S> getAlgorithmResult() {
 		return algorithmResult;
 	}
-    
-    /**
-     * @return the new state produced by the operation
-     */
-    public S getState() {
-    	return this.algorithmResult.getState();
-    }
-    
-    /**
-     * Builds a {@link StoreState} combining the resulting state with its expiry instant.
-     *
-     * @return the store-ready state
-     */
-    public StoreState<S> getStoreState(){
-    	return new StoreState<>(this.getState(), this.getExpiresAt()); 
-    }
+
+	/**
+	 * @return the new state produced by the operation
+	 */
+	public S getState() {
+		return this.algorithmResult.getState();
+	}
+
+	/**
+	 * Builds a {@link StoreState} combining the resulting state with its expiry instant.
+	 *
+	 * @return the store-ready state
+	 */
+	public StoreState<S> getStoreState() {
+		return new StoreState<>(this.getState(), this.getExpiresAt());
+	}
 }

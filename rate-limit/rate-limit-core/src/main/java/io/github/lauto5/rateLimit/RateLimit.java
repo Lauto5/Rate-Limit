@@ -30,122 +30,122 @@ import io.github.lauto5.rateLimit.logging.NoOpLogger;
  */
 public final class RateLimit<P extends RateLimitPolicy> {
 
-    private final RateLimitExecutor<P> executor;
+	private final RateLimitExecutor<P> executor;
 
-    private RateLimit(RateLimitExecutor<P> executor) {
-        this.executor = executor;
-    }
+	private RateLimit(RateLimitExecutor<P> executor) {
+		this.executor = executor;
+	}
 
-    /**
-     * Builds a {@link RateLimit} using the system UTC clock.
-     *
-     * @param algorithm the algorithm that evaluates each request against the configured state
-     * @param store     the persistent store used to hold and atomically update algorithm state
-     * @param <S>       the concrete algorithm state type
-     * @param <P>       the concrete policy type
-     * @return a ready-to-use {@code RateLimit} instance
-     */
-    public static <S extends AlgorithmState, P extends RateLimitPolicy>
-    RateLimit<P> build(
-            RateLimitAlgorithm<S, P> algorithm,
-            RateLimitStore store) {
+	/**
+	 * Builds a {@link RateLimit} using the system UTC clock.
+	 *
+	 * @param algorithm the algorithm that evaluates each request against the configured state
+	 * @param store     the persistent store used to hold and atomically update algorithm state
+	 * @param <S>       the concrete algorithm state type
+	 * @param <P>       the concrete policy type
+	 * @return a ready-to-use {@code RateLimit} instance
+	 */
+	public static <S extends AlgorithmState, P extends RateLimitPolicy>
+	RateLimit<P> build(
+			RateLimitAlgorithm<S, P> algorithm,
+			RateLimitStore store) {
 
-        return build(
-                algorithm,
-                store,
-                NoOpLogger.getInstance()
-        );
-    }
+		return build(
+				algorithm,
+				store,
+				NoOpLogger.getInstance()
+		);
+	}
 
-    /**
-     * Builds a {@link RateLimit} using the system UTC clock and the provided {@link Logger}.
-     *
-     * @param algorithm the algorithm that evaluates each request against the configured state
-     * @param store     the persistent store used to hold and atomically update algorithm state
-     * @param logger    the logger used to emit diagnostic output throughout the pipeline
-     * @param <S>       the concrete algorithm state type
-     * @param <P>       the concrete policy type
-     * @return a ready-to-use {@code RateLimit} instance
-     */
-    public static <S extends AlgorithmState, P extends RateLimitPolicy>
-    RateLimit<P> build(
-            RateLimitAlgorithm<S, P> algorithm,
-            RateLimitStore store,
-            Logger logger) {
+	/**
+	 * Builds a {@link RateLimit} using the system UTC clock and the provided {@link Logger}.
+	 *
+	 * @param algorithm the algorithm that evaluates each request against the configured state
+	 * @param store     the persistent store used to hold and atomically update algorithm state
+	 * @param logger    the logger used to emit diagnostic output throughout the pipeline
+	 * @param <S>       the concrete algorithm state type
+	 * @param <P>       the concrete policy type
+	 * @return a ready-to-use {@code RateLimit} instance
+	 */
+	public static <S extends AlgorithmState, P extends RateLimitPolicy>
+	RateLimit<P> build(
+			RateLimitAlgorithm<S, P> algorithm,
+			RateLimitStore store,
+			Logger logger) {
 
-        return build(
-                algorithm,
-                store,
-                Clock.systemUTC(),
-                logger
-        );
-    }
+		return build(
+				algorithm,
+				store,
+				Clock.systemUTC(),
+				logger
+		);
+	}
 
-    /**
-     * Builds a {@link RateLimit} using the provided {@link Clock}.
-     *
-     * @param algorithm the algorithm that evaluates each request against the configured state
-     * @param store     the persistent store used to hold and atomically update algorithm state
-     * @param clock     the clock used to obtain the current instant, enabling deterministic testing
-     * @param <S>       the concrete algorithm state type
-     * @param <P>       the concrete policy type
-     * @return a ready-to-use {@code RateLimit} instance
-     */
-    public static <S extends AlgorithmState, P extends RateLimitPolicy>
-    RateLimit<P> build(
-            RateLimitAlgorithm<S, P> algorithm,
-            RateLimitStore store,
-            Clock clock) {
+	/**
+	 * Builds a {@link RateLimit} using the provided {@link Clock}.
+	 *
+	 * @param algorithm the algorithm that evaluates each request against the configured state
+	 * @param store     the persistent store used to hold and atomically update algorithm state
+	 * @param clock     the clock used to obtain the current instant, enabling deterministic testing
+	 * @param <S>       the concrete algorithm state type
+	 * @param <P>       the concrete policy type
+	 * @return a ready-to-use {@code RateLimit} instance
+	 */
+	public static <S extends AlgorithmState, P extends RateLimitPolicy>
+	RateLimit<P> build(
+			RateLimitAlgorithm<S, P> algorithm,
+			RateLimitStore store,
+			Clock clock) {
 
-        return build(
-                algorithm,
-                store,
-                clock,
-                NoOpLogger.getInstance()
-        );
-    }
+		return build(
+				algorithm,
+				store,
+				clock,
+				NoOpLogger.getInstance()
+		);
+	}
 
-    /**
-     * Builds a {@link RateLimit} using the provided {@link Clock} and {@link Logger}.
-     *
-     * @param algorithm the algorithm that evaluates each request against the configured state
-     * @param store     the persistent store used to hold and atomically update algorithm state
-     * @param clock     the clock used to obtain the current instant, enabling deterministic testing
-     * @param logger    the logger used to emit diagnostic output throughout the pipeline
-     * @param <S>       the concrete algorithm state type
-     * @param <P>       the concrete policy type
-     * @return a ready-to-use {@code RateLimit} instance
-     */
-    public static <S extends AlgorithmState, P extends RateLimitPolicy>
-    RateLimit<P> build(
-            RateLimitAlgorithm<S, P> algorithm,
-            RateLimitStore store,
-            Clock clock,
-            Logger logger) {
+	/**
+	 * Builds a {@link RateLimit} using the provided {@link Clock} and {@link Logger}.
+	 *
+	 * @param algorithm the algorithm that evaluates each request against the configured state
+	 * @param store     the persistent store used to hold and atomically update algorithm state
+	 * @param clock     the clock used to obtain the current instant, enabling deterministic testing
+	 * @param logger    the logger used to emit diagnostic output throughout the pipeline
+	 * @param <S>       the concrete algorithm state type
+	 * @param <P>       the concrete policy type
+	 * @return a ready-to-use {@code RateLimit} instance
+	 */
+	public static <S extends AlgorithmState, P extends RateLimitPolicy>
+	RateLimit<P> build(
+			RateLimitAlgorithm<S, P> algorithm,
+			RateLimitStore store,
+			Clock clock,
+			Logger logger) {
 
-        RateLimitService<S, P> service =
-                new RateLimitService<>(
-                        store,
-                        algorithm,
-                        clock,
-                        logger
-                );
+		RateLimitService<S, P> service =
+				new RateLimitService<>(
+						store,
+						algorithm,
+						clock,
+						logger
+				);
 
-        return new RateLimit<>(service);
-    }
+		return new RateLimit<>(service);
+	}
 
-    /**
-     * Evaluates a request against the configured algorithm and policy, updating the relevant
-     * state stored for the given identifier.
-     *
-     * @param identifier the logical key identifying the request stream being limited
-     * @param policy     the rate-limiting configuration to enforce
-     * @return the result of the request: whether it was allowed and, if not, when to retry
-     */
-    public RateLimitResult use(
-            String identifier,
-            P policy) {
+	/**
+	 * Evaluates a request against the configured algorithm and policy, updating the relevant
+	 * state stored for the given identifier.
+	 *
+	 * @param identifier the logical key identifying the request stream being limited
+	 * @param policy     the rate-limiting configuration to enforce
+	 * @return the result of the request: whether it was allowed and, if not, when to retry
+	 */
+	public RateLimitResult use(
+			String identifier,
+			P policy) {
 
-        return executor.execute(identifier, policy);
-    }
+		return executor.execute(identifier, policy);
+	}
 }

@@ -20,206 +20,206 @@ import io.github.lauto5.rateLimit.testdoubles.StubRateLimitAlgorithm;
 
 class RateLimitAtomicOperationUnitTest {
 
-    private static final Instant FIXED_NOW =
-            Instant.parse("2026-01-01T10:00:00Z");
+	private static final Instant FIXED_NOW =
+			Instant.parse("2026-01-01T10:00:00Z");
 
-    private static final Duration WINDOW =
-            Duration.ofMinutes(1);
+	private static final Duration WINDOW =
+			Duration.ofMinutes(1);
 
-    private static final int DEFAULT_LIMIT = 10;
+	private static final int DEFAULT_LIMIT = 10;
 
-    private FixedWindowPolicy defaultPolicy;
-    private AlgorithmContext defaultContext;
+	private FixedWindowPolicy defaultPolicy;
+	private AlgorithmContext defaultContext;
 
-    // ==================== SETUP ====================
+	// ==================== SETUP ====================
 
-    @BeforeEach
-    void setUp() {
-        defaultPolicy = new FixedWindowPolicy(DEFAULT_LIMIT, WINDOW);
-        defaultContext = new AlgorithmContext(FIXED_NOW);
-    }
+	@BeforeEach
+	void setUp() {
+		defaultPolicy = new FixedWindowPolicy(DEFAULT_LIMIT, WINDOW);
+		defaultContext = new AlgorithmContext(FIXED_NOW);
+	}
 
-    // ==================== FACTORIES ====================
+	// ==================== FACTORIES ====================
 
-    private RateLimitAtomicOperation<FixedWindowState, FixedWindowPolicy> operation(
-            RateLimitAlgorithm<FixedWindowState, FixedWindowPolicy> algorithm) {
+	private RateLimitAtomicOperation<FixedWindowState, FixedWindowPolicy> operation(
+			RateLimitAlgorithm<FixedWindowState, FixedWindowPolicy> algorithm) {
 
-        return new RateLimitAtomicOperation<>(
-                algorithm,
-                defaultPolicy,
-                defaultContext
-        );
-    }
+		return new RateLimitAtomicOperation<>(
+				algorithm,
+				defaultPolicy,
+				defaultContext
+		);
+	}
 
-    private FixedWindowState state(int count) {
-        return new FixedWindowState(count, FIXED_NOW);
-    }
+	private FixedWindowState state(int count) {
+		return new FixedWindowState(count, FIXED_NOW);
+	}
 
-    private StoreState<FixedWindowState> storeState(
-            FixedWindowState state,
-            Instant expiresAt) {
+	private StoreState<FixedWindowState> storeState(
+			FixedWindowState state,
+			Instant expiresAt) {
 
-        return new StoreState<>(state, expiresAt);
-    }
+		return new StoreState<>(state, expiresAt);
+	}
 
-    private AlgorithmResult<FixedWindowState> allowedResult(
-            FixedWindowState state) {
+	private AlgorithmResult<FixedWindowState> allowedResult(
+			FixedWindowState state) {
 
-        return AlgorithmResult.allowed(
-                state,
-                DEFAULT_LIMIT,
-                FIXED_NOW.plus(WINDOW),
-                WINDOW
-        );
-    }
+		return AlgorithmResult.allowed(
+				state,
+				DEFAULT_LIMIT,
+				FIXED_NOW.plus(WINDOW),
+				WINDOW
+		);
+	}
 
-    private AlgorithmResult<FixedWindowState> allowedResult(
-            FixedWindowState state,
-            Instant expiresAt) {
+	private AlgorithmResult<FixedWindowState> allowedResult(
+			FixedWindowState state,
+			Instant expiresAt) {
 
-        return AlgorithmResult.allowed(
-                state,
-                DEFAULT_LIMIT,
-                expiresAt,
-                Duration.between(FIXED_NOW, expiresAt)
-        );
-    }
+		return AlgorithmResult.allowed(
+				state,
+				DEFAULT_LIMIT,
+				expiresAt,
+				Duration.between(FIXED_NOW, expiresAt)
+		);
+	}
 
-    // ==================== TESTS ====================
+	// ==================== TESTS ====================
 
-    @Test
-    void shouldCreateInitialStateWhenStoreStateIsNull() {
+	@Test
+	void shouldCreateInitialStateWhenStoreStateIsNull() {
 
-        // Arrange
+		// Arrange
 
-        FixedWindowState initialState = state(0);
+		FixedWindowState initialState = state(0);
 
-        AlgorithmResult<FixedWindowState> algorithmResult =
-                allowedResult(state(1));
+		AlgorithmResult<FixedWindowState> algorithmResult =
+				allowedResult(state(1));
 
-        StubRateLimitAlgorithm<
-                FixedWindowState,
-                FixedWindowPolicy> stub =
-                new StubRateLimitAlgorithm<>(
-                        initialState,
-                        algorithmResult);
+		StubRateLimitAlgorithm<
+				FixedWindowState,
+				FixedWindowPolicy> stub =
+				new StubRateLimitAlgorithm<>(
+						initialState,
+						algorithmResult);
 
-        RateLimitAtomicOperation<
-                FixedWindowState,
-                FixedWindowPolicy> operation =
-                operation(stub);
+		RateLimitAtomicOperation<
+				FixedWindowState,
+				FixedWindowPolicy> operation =
+				operation(stub);
 
-        // Act
+		// Act
 
-        operation.apply(null);
+		operation.apply(null);
 
-        // Assert
+		// Assert
 
-        assertSame(initialState, stub.getReceivedState());
-    }
+		assertSame(initialState, stub.getReceivedState());
+	}
 
-    @Test
-    void shouldUseExistingStateFromStore() {
+	@Test
+	void shouldUseExistingStateFromStore() {
 
-        // Arrange
+		// Arrange
 
-        FixedWindowState existingState = state(8);
+		FixedWindowState existingState = state(8);
 
-        StoreState<FixedWindowState> currentStoreState =
-                storeState(
-                        existingState,
-                        FIXED_NOW.plus(WINDOW));
+		StoreState<FixedWindowState> currentStoreState =
+				storeState(
+						existingState,
+						FIXED_NOW.plus(WINDOW));
 
-        StubRateLimitAlgorithm<
-                FixedWindowState,
-                FixedWindowPolicy> stub =
-                new StubRateLimitAlgorithm<>(
-                        state(0),
-                        allowedResult(existingState));
+		StubRateLimitAlgorithm<
+				FixedWindowState,
+				FixedWindowPolicy> stub =
+				new StubRateLimitAlgorithm<>(
+						state(0),
+						allowedResult(existingState));
 
-        RateLimitAtomicOperation<
-                FixedWindowState,
-                FixedWindowPolicy> operation =
-                operation(stub);
+		RateLimitAtomicOperation<
+				FixedWindowState,
+				FixedWindowPolicy> operation =
+				operation(stub);
 
-        // Act
+		// Act
 
-        operation.apply(currentStoreState);
+		operation.apply(currentStoreState);
 
-        // Assert
+		// Assert
 
-        assertSame(existingState, stub.getReceivedState());
-    }
+		assertSame(existingState, stub.getReceivedState());
+	}
 
-    @Test
-    void shouldReturnAlgorithmResultInsideAtomicOperationResult() {
+	@Test
+	void shouldReturnAlgorithmResultInsideAtomicOperationResult() {
 
-        // Arrange
+		// Arrange
 
-        FixedWindowState state = state(1);
+		FixedWindowState state = state(1);
 
-        AlgorithmResult<FixedWindowState> expected =
-                allowedResult(state);
+		AlgorithmResult<FixedWindowState> expected =
+				allowedResult(state);
 
-        StubRateLimitAlgorithm<
-                FixedWindowState,
-                FixedWindowPolicy> stub =
-                new StubRateLimitAlgorithm<>(
-                        state,
-                        expected);
+		StubRateLimitAlgorithm<
+				FixedWindowState,
+				FixedWindowPolicy> stub =
+				new StubRateLimitAlgorithm<>(
+						state,
+						expected);
 
-        RateLimitAtomicOperation<
-                FixedWindowState,
-                FixedWindowPolicy> operation =
-                operation(stub);
+		RateLimitAtomicOperation<
+				FixedWindowState,
+				FixedWindowPolicy> operation =
+				operation(stub);
 
-        // Act
+		// Act
 
-        AtomicOperationResult<FixedWindowState> result =
-                operation.apply(null);
+		AtomicOperationResult<FixedWindowState> result =
+				operation.apply(null);
 
-        // Assert
+		// Assert
 
-        assertSame(expected, result.getAlgorithmResult());
-    }
+		assertSame(expected, result.getAlgorithmResult());
+	}
 
-    @Test
-    void shouldCreateStoreStateUsingAlgorithmResult() {
+	@Test
+	void shouldCreateStoreStateUsingAlgorithmResult() {
 
-        // Arrange
+		// Arrange
 
-        FixedWindowState state = state(3);
+		FixedWindowState state = state(3);
 
-        Instant expiresAt =
-                FIXED_NOW.plus(WINDOW);
+		Instant expiresAt =
+				FIXED_NOW.plus(WINDOW);
 
-        AlgorithmResult<FixedWindowState> algorithmResult =
-                allowedResult(state, expiresAt);
+		AlgorithmResult<FixedWindowState> algorithmResult =
+				allowedResult(state, expiresAt);
 
-        StubRateLimitAlgorithm<
-                FixedWindowState,
-                FixedWindowPolicy> stub =
-                new StubRateLimitAlgorithm<>(
-                        state,
-                        algorithmResult);
+		StubRateLimitAlgorithm<
+				FixedWindowState,
+				FixedWindowPolicy> stub =
+				new StubRateLimitAlgorithm<>(
+						state,
+						algorithmResult);
 
-        RateLimitAtomicOperation<
-                FixedWindowState,
-                FixedWindowPolicy> operation =
-                operation(stub);
+		RateLimitAtomicOperation<
+				FixedWindowState,
+				FixedWindowPolicy> operation =
+				operation(stub);
 
-        // Act
+		// Act
 
-        AtomicOperationResult<FixedWindowState> result =
-                operation.apply(null);
+		AtomicOperationResult<FixedWindowState> result =
+				operation.apply(null);
 
-        // Assert
+		// Assert
 
-        StoreState<FixedWindowState> stored =
-                result.getStoreState();
+		StoreState<FixedWindowState> stored =
+				result.getStoreState();
 
-        assertNotNull(stored);
-        assertSame(state, stored.getState());
-        assertEquals(expiresAt, stored.getExpiresAt());
-    }
+		assertNotNull(stored);
+		assertSame(state, stored.getState());
+		assertEquals(expiresAt, stored.getExpiresAt());
+	}
 }

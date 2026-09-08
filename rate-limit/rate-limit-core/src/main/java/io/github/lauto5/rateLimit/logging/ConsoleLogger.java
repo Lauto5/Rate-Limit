@@ -15,45 +15,45 @@ import io.github.lauto5.rateLimit.application.ports.out.Logger;
  */
 public class ConsoleLogger implements Logger {
 
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
-    
-    private final String name;
-    private final Level minLevel;
+	private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
-    public ConsoleLogger(Class<?> clazz) {
-        this(clazz.getSimpleName(), Level.INFO);
-    }
+	private final String name;
+	private final Level minLevel;
 
-    public ConsoleLogger(Class<?> clazz, Level minLevel) {
-        this(clazz.getSimpleName(), minLevel);
-    }
+	public ConsoleLogger(Class<?> clazz) {
+		this(clazz.getSimpleName(), Level.INFO);
+	}
 
-    public ConsoleLogger(String name, Level minLevel) {
-        this.name = name;
-        this.minLevel = minLevel;
-    }
+	public ConsoleLogger(Class<?> clazz, Level minLevel) {
+		this(clazz.getSimpleName(), minLevel);
+	}
 
-    @Override
-    public void log(Level level, String message) {
-        if (level.ordinal() < minLevel.ordinal()) {
-            return; // Discard logs below the configured minimum level
-        }
+	public ConsoleLogger(String name, Level minLevel) {
+		this.name = name;
+		this.minLevel = minLevel;
+	}
 
-        String timestamp = LocalDateTime.now().format(FORMATTER);
-        String threadName = Thread.currentThread().getName();
-        
-        String formattedMessage = String.format("[%s] [%s] [%s] (%s): %s", 
-                timestamp, 
-                level, 
-                threadName, 
-                name, 
-                message
-        );
+	@Override
+	public void log(Level level, String message) {
+		if (level.ordinal() < minLevel.ordinal()) {
+			return; // Discard logs below the configured minimum level
+		}
 
-        if (level == Level.ERROR) {
-            System.err.println(formattedMessage);
-        } else {
-            System.out.println(formattedMessage);
-        }
-    }
+		String timestamp = LocalDateTime.now().format(FORMATTER);
+		String threadName = Thread.currentThread().getName();
+
+		String formattedMessage = String.format("[%s] [%s] [%s] (%s): %s",
+				timestamp,
+				level,
+				threadName,
+				name,
+				message
+		);
+
+		if (level == Level.ERROR) {
+			System.err.println(formattedMessage);
+		} else {
+			System.out.println(formattedMessage);
+		}
+	}
 }

@@ -30,7 +30,7 @@ public class TokenBucketAlgorithmImplUnitTest {
 	@BeforeEach
 	void setUp() {
 		algorithm = new TokenBucketAlgorithmImpl();
-		standardPolicy = new TokenBucketPolicy(5.0, 1.0); // 5 tokens, 1 token/seg
+		standardPolicy = new TokenBucketPolicy(5.0, 1.0); // 5 tokens, 1 token/sec
 		fixedNow = Instant.parse("2026-01-01T10:00:00Z");
 	}
 
@@ -331,7 +331,7 @@ public class TokenBucketAlgorithmImplUnitTest {
 			// Arrange
 			TokenBucketState initialState = stateWith(5.0, fixedNow);
 			AlgorithmContext context = contextAt(fixedNow);
-			Duration expectedExpireIn = Duration.ofSeconds(1); // falta 1 token para volver a 5
+			Duration expectedExpireIn = Duration.ofSeconds(1); // 1 token short of being full again
 
 			// Act
 			AlgorithmResult<TokenBucketState> result = executeAlgorithm(initialState, context);
@@ -348,7 +348,7 @@ public class TokenBucketAlgorithmImplUnitTest {
 			// Arrange
 			TokenBucketState initialState = stateWith(3.0, fixedNow);
 			AlgorithmContext context = contextAt(fixedNow);
-			Instant expectedResetAt = fixedNow.plusSeconds(3); // faltan 3 tokens para el tope
+			Instant expectedResetAt = fixedNow.plusSeconds(3); // 3 tokens short of the cap
 
 			// Act
 			AlgorithmResult<TokenBucketState> result = executeAlgorithm(initialState, context);
@@ -440,7 +440,7 @@ public class TokenBucketAlgorithmImplUnitTest {
 		void shouldRespectCustomRefillRate() {
 
 			// Arrange
-			TokenBucketPolicy customPolicy = policyWith(5.0, 2.0); // 2 tokens/seg
+			TokenBucketPolicy customPolicy = policyWith(5.0, 2.0); // 2 tokens/sec
 			TokenBucketState initialState = stateWith(0.0, fixedNow);
 			AlgorithmContext context = contextAt(fixedNow.plusSeconds(1));
 
@@ -457,7 +457,7 @@ public class TokenBucketAlgorithmImplUnitTest {
 		void shouldRespectSlowRefillRate() {
 
 			// Arrange
-			TokenBucketPolicy customPolicy = policyWith(5.0, 0.5); // 0.5 tokens/seg
+			TokenBucketPolicy customPolicy = policyWith(5.0, 0.5); // 0.5 tokens/sec
 			TokenBucketState initialState = stateWith(0.0, fixedNow);
 			AlgorithmContext context = contextAt(fixedNow.plusSeconds(2));
 
@@ -509,14 +509,14 @@ public class TokenBucketAlgorithmImplUnitTest {
 			TokenBucketState state = stateWith(5.0, fixedNow);
 			AlgorithmContext context = contextAt(fixedNow);
 
-			// Act & Assert - Consumir los 5 tokens disponibles
+			// Act & Assert - Consume the 5 available tokens
 			for (int i = 1; i <= 5; i++) {
 				AlgorithmResult<TokenBucketState> result = executeAlgorithm(state, context);
 				assertTrue(result.isAllowed(), "Request " + i + " should be allowed");
 				state = result.getState();
 			}
 
-			// Request 6 - Debe ser denegada
+			// Request 6 - must be denied
 			AlgorithmResult<TokenBucketState> deniedResult = executeAlgorithm(state, context);
 			assertFalse(deniedResult.isAllowed(), "Request 6 should be denied");
 
@@ -529,12 +529,12 @@ public class TokenBucketAlgorithmImplUnitTest {
 			TokenBucketState state = stateWith(0.0, fixedNow);
 			AlgorithmContext emptyContext = contextAt(fixedNow);
 
-			// Act - Petición sin tokens disponibles
+			// Act - Request with no tokens available
 			AlgorithmResult<TokenBucketState> deniedResult = executeAlgorithm(state, emptyContext);
 			assertFalse(deniedResult.isAllowed(), "Should be denied when bucket is empty");
 			state = deniedResult.getState();
 
-			// Act - Pasan 5 segundos, se recargan 5 tokens
+			// Act - 5 seconds pass, 5 tokens are refilled
 			AlgorithmContext refilledContext = contextAt(fixedNow.plusSeconds(5));
 			AlgorithmResult<TokenBucketState> allowedResult = executeAlgorithm(state, refilledContext);
 

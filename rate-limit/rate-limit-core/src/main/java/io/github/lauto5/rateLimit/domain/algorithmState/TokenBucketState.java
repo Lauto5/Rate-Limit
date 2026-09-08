@@ -8,11 +8,11 @@ import java.time.Instant;
  * <p>Holds the current number of tokens available in the bucket and the instant at which the
  * bucket was last refilled.
  */
-public class TokenBucketState implements AlgorithmState {
+public final class TokenBucketState implements AlgorithmState {
 
 	private final double tokens;
 	
-    private final Instant lastRefill;
+	private final Instant lastRefill;
 	
 	public TokenBucketState(double tokens, Instant lastRefill) {
 		super();

@@ -13,12 +13,12 @@ import io.github.lauto5.rateLimit.domain.policies.RateLimitPolicy;
  */
 public interface RateLimitExecutor<P extends RateLimitPolicy> {
 
-    /**
-     * Evaluates a request for the specified identifier under the given policy.
-     *
-     * @param identifier the logical key identifying the request stream being limited
-     * @param policy     the rate-limiting configuration to enforce
-     * @return the result of the evaluation
-     */
-    RateLimitResult execute(String identifier, P policy);
+	/**
+	 * Evaluates a request for the specified identifier under the given policy.
+	 *
+	 * @param identifier the logical key identifying the request stream being limited
+	 * @param policy     the rate-limiting configuration to enforce
+	 * @return the result of the evaluation
+	 */
+	RateLimitResult execute(String identifier, P policy);
 }

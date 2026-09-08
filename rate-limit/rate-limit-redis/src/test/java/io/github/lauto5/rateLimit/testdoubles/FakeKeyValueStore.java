@@ -11,11 +11,11 @@ import io.github.lauto5.rateLimit.infrastructure.TransactionBody;
 import io.github.lauto5.rateLimit.infrastructure.TransactionWrite;
 
 /**
- * Implementación fake/in-memory de {@link RedisTransactionPort} para pruebas unitarias.
+ * Fake/in-memory implementation of {@link RedisTransactionPort} for unit tests.
  *
- * <p>Simula la atomicidad de WATCH/MULTI/EXEC: el {@link TransactionBody} se ejecuta dentro de
- * un {@code compute} atomico por clave, de modo que dos hilos nunca observan el mismo estado
- * obsoleto y pierden actualizaciones, igual que con el protocolo real.
+ * <p>Simulates WATCH/MULTI/EXEC atomicity: the {@link TransactionBody} is executed inside
+ * a per-key atomic {@code compute}, so two threads never observe the same stale state
+ * and lose updates, just as with the real protocol.
  */
 public final class FakeKeyValueStore implements RedisTransactionPort {
 
@@ -46,7 +46,7 @@ public final class FakeKeyValueStore implements RedisTransactionPort {
 	}
 
 	/**
-	 * Avanza el tiempo virtual, útil para pruebas de expiración.
+	 * Advances the virtual time, useful for expiration tests.
 	 */
 	public void advanceTime(long millis) {
 		currentTime.addAndGet(millis);
@@ -54,7 +54,7 @@ public final class FakeKeyValueStore implements RedisTransactionPort {
 	}
 
 	/**
-	 * Limpia todas las entradas del almacenamiento.
+	 * Clears all storage entries.
 	 */
 	public void clear() {
 		store.clear();
@@ -62,7 +62,7 @@ public final class FakeKeyValueStore implements RedisTransactionPort {
 	}
 
 	/**
-	 * Verifica si una clave existe y no ha expirado.
+	 * Checks whether a key exists and has not expired.
 	 */
 	public boolean exists(String identifier) {
 		cleanup();
@@ -70,8 +70,8 @@ public final class FakeKeyValueStore implements RedisTransactionPort {
 	}
 
 	/**
-	 * Obtiene el TTL restante en milisegundos para una clave.
-	 * Retorna null si la clave no existe o ya expiró.
+	 * Gets the remaining TTL in milliseconds for a key.
+	 * Returns null if the key does not exist or has already expired.
 	 */
 	public Long getRemainingTtl(String identifier) {
 		cleanup();
@@ -84,15 +84,15 @@ public final class FakeKeyValueStore implements RedisTransactionPort {
 	}
 
 	/**
-	 * Obtiene el valor sin verificar expiración (para debugging).
+	 * Gets the value without checking expiration (for debugging).
 	 */
 	public byte[] getRaw(String identifier) {
 		return store.get(identifier);
 	}
 
 	/**
-	 * Escribe directamente un valor, útil para pre-cargar datos (por ejemplo, estados
-	 * corruptos) sin pasar por la semántica transaccional.
+	 * Writes a value directly, useful for pre-loading data (e.g. corrupted
+	 * states) without going through the transactional semantics.
 	 */
 	public void putRaw(String identifier, byte[] value) {
 		expirations.remove(identifier);

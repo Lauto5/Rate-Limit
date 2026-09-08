@@ -42,144 +42,144 @@ public final class GcraAlgorithmImpl implements GcraAlgorithm {
 		return CODEC;
 	}
 	
-    @Override
-    public AlgorithmResult<GcraState> execute(
-            GcraState state,
-            GcraPolicy policy,
-            AlgorithmContext context) {
+	@Override
+	public AlgorithmResult<GcraState> execute(
+			GcraState state,
+			GcraPolicy policy,
+			AlgorithmContext context) {
 
-        Instant now = context.getNow();
+		Instant now = context.getNow();
 
-        long nowMillis = now.toEpochMilli();
+		long nowMillis = now.toEpochMilli();
 
-        long emissionIntervalMillis =
-                emissionIntervalMillis(policy);
+		long emissionIntervalMillis =
+				computeEmissionIntervalMillis(policy);
 
-        long toleranceMillis =
-                policy.getBurst().toMillis();
+		long toleranceMillis =
+				policy.getBurst().toMillis();
 
-        long tat =
-                state.getTat();
+		long tat =
+				state.getTat();
 
-        /*
-         * If there is no active debt, the effective TAT
-         * begins at the current instant.
-         */
-        long effectiveTat =
-                Math.max(tat, nowMillis);
+		/*
+		 * If there is no active debt, the effective TAT
+		 * begins at the current instant.
+		 */
+		long effectiveTat =
+				Math.max(tat, nowMillis);
 
-        /*
-         * Earliest instant at which a new request
-         * can be accepted.
-         */
-        long allowAtMillis =
-                effectiveTat - toleranceMillis;
+		/*
+		 * Earliest instant at which a new request
+		 * can be accepted.
+		 */
+		long allowAtMillis =
+				effectiveTat - toleranceMillis;
 
-        // ============================================================
-        // DENIED
-        // ============================================================
+		// ============================================================
+		// DENIED
+		// ============================================================
 
-        if (nowMillis < allowAtMillis) {
+		if (nowMillis < allowAtMillis) {
 
-            Duration retryAfter =
-                    Duration.ofMillis(
-                            allowAtMillis - nowMillis
-                    );
+			Duration retryAfter =
+					Duration.ofMillis(
+							allowAtMillis - nowMillis
+					);
 
-            Duration expireIn =
-                    Duration.ofMillis(
-                            Math.max(
-                                    tat - nowMillis,
-                                    0
-                            )
-                    );
+			Duration expireIn =
+					Duration.ofMillis(
+							Math.max(
+									tat - nowMillis,
+									0
+							)
+					);
 
-            return AlgorithmResult.denied(
-                    state,
-                    retryAfter,
-                    Instant.ofEpochMilli(allowAtMillis),
-                    expireIn
-            );
-        }
+			return AlgorithmResult.denied(
+					state,
+					retryAfter,
+					Instant.ofEpochMilli(allowAtMillis),
+					expireIn
+			);
+		}
 
-        // ============================================================
-        // ALLOWED
-        // ============================================================
+		// ============================================================
+		// ALLOWED
+		// ============================================================
 
-        long newTat =
-                effectiveTat + emissionIntervalMillis;
+		long newTat =
+				effectiveTat + emissionIntervalMillis;
 
-        GcraState newState =
-                new GcraState(newTat);
+		GcraState newState =
+				new GcraState(newTat);
 
-        int remaining =
-                calculateRemaining(
-                        newTat,
-                        nowMillis,
-                        toleranceMillis,
-                        emissionIntervalMillis
-                );
+		int remaining =
+				calculateRemaining(
+						newTat,
+						nowMillis,
+						toleranceMillis,
+						emissionIntervalMillis
+				);
 
-        Instant resetAt =
-                Instant.ofEpochMilli(newTat);
+		Instant resetAt =
+				Instant.ofEpochMilli(newTat);
 
-        Duration expireIn =
-                Duration.ofMillis(
-                        Math.max(
-                                newTat - nowMillis,
-                                0
-                        )
-                );
+		Duration expireIn =
+				Duration.ofMillis(
+						Math.max(
+								newTat - nowMillis,
+								0
+						)
+				);
 
-        return AlgorithmResult.allowed(
-                newState,
-                remaining,
-                resetAt,
-                expireIn
-        );
-    }
+		return AlgorithmResult.allowed(
+				newState,
+				remaining,
+				resetAt,
+				expireIn
+		);
+	}
 
-    @Override
-    public GcraState createInitialState(
-            GcraPolicy policy,
-            AlgorithmContext context) {
+	@Override
+	public GcraState createInitialState(
+			GcraPolicy policy,
+			AlgorithmContext context) {
 
-        return new GcraState(
-                context.getNow().toEpochMilli()
-        );
-    }
+		return new GcraState(
+				context.getNow().toEpochMilli()
+		);
+	}
 
-    private long emissionIntervalMillis(
-            GcraPolicy policy) {
+	private long computeEmissionIntervalMillis(
+			GcraPolicy policy) {
 
-        long interval =
-                Math.round(
-                        1000.0 / policy.getRate()
-                );
+		long interval =
+				Math.round(
+						1000.0 / policy.getRate()
+				);
 
-        return Math.max(interval, 1);
-    }
+		return Math.max(interval, 1);
+	}
 
-    private int calculateRemaining(
-            long tat,
-            long nowMillis,
-            long toleranceMillis,
-            long emissionIntervalMillis) {
+	private int calculateRemaining(
+			long tat,
+			long nowMillis,
+			long toleranceMillis,
+			long emissionIntervalMillis) {
 
-        long debtMillis =
-                Math.max(
-                        tat - nowMillis,
-                        0
-                );
+		long debtMillis =
+				Math.max(
+						tat - nowMillis,
+						0
+				);
 
-        long availableTolerance =
-                Math.max(
-                        toleranceMillis - debtMillis,
-                        0
-                );
+		long availableTolerance =
+				Math.max(
+						toleranceMillis - debtMillis,
+						0
+				);
 
-        return (int) (
-                availableTolerance / emissionIntervalMillis
-        );
-    }
+		return (int) (
+				availableTolerance / emissionIntervalMillis
+		);
+	}
 }
