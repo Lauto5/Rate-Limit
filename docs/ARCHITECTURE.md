@@ -49,8 +49,8 @@ The core depends only on abstractions (interfaces) and never on concrete technol
 
 ```
                  +---------------------------------+
-                 |        Public API (api/)        |
-                 |   Algorithm, Persistence        |
+                 |  Public API (api/)              |
+                 |  Algorithm, RateLimitResult     |
                  +----------------+----------------+
                                   |
                                   v
@@ -61,24 +61,29 @@ The core depends only on abstractions (interfaces) and never on concrete technol
                  |  - Adapters                    |
                  |  - Result mapping              |
                  |  - Ports (contracts)           |
+                 |  - VersionedStateCodec         |
                  +--------+---------------+-------+
                           |               |
               +-----------v----+   +------v------------+
               |    Domain Core  |   |     Ports        |
               |    (domain/)    |   |  (application/   |
               |  Algorithms     |   |    ports/)       |
-              |  State / Policy |   |                  |
-              |  Models         |   |                  |
+              |  State / Policy |   |  Logger, Store,  |
+              |  Models         |   |  StateCodec, ... |
               +-----------------+   +------+-----------+
-                                           |
-                              +------------v------------+
-                              |   Infrastructure        |
-                              |   (infraestructure/)    |
-                              |   InMemoryStore, ...    |
-                              +-------------------------+
+                                            |
+                    +-----------------------+-----------------------+
+                    v                       v                       v
+          +------------------+  +------------------------+  +-------------------+
+          | rate-limit-      |  | rate-limit-redis       |  | examples/*        |
+          | inmemory         |  | Infrastructure:        |  | standalone apps   |
+          | infrastructure/  |  |  LettuceTransaction    |  +-------------------+
+          |  InMemoryStore   |  |  RedisStore            |
+          +------------------+  |  RedisTransactionPort  |
+                                +------------------------+
 ```
 
-The dependency direction always points **inward**: infrastructure implements ports, the application layer depends on ports, and the domain core depends on nothing.
+The Maven reactor mirrors this separation: `rate-limit-core` holds the API, application and domain layers; `rate-limit-inmemory` and `rate-limit-redis` are separate modules holding only infrastructure adapters. The dependency direction always points **inward**: infrastructure modules depend on the core and implement its ports, the application layer depends on ports, and the domain core depends on nothing.
 
 ---
 
@@ -91,9 +96,10 @@ The public surface of the library is intentionally minimal:
   ```java
   Algorithm.fixedWindow()
   ```
-- **`Persistence`** -- a static factory for stores:
+- **`Persistence`** -- a module-scoped static factory for stores. Each persistence module defines its own factory class so unused infrastructure never leaks onto the classpath:
   ```java
-  Persistence.inMemory()
+  io.github.lauto5.rateLimit.inmemory.Persistence.inMemory()
+  io.github.lauto5.rateLimit.redis.Persistence.inRedis("redis://localhost:6379")
   ```
 - **`RateLimitResult`** -- the return value with `allowed`, `remaining`, `retryAfter`, and `resetAt`.
 
@@ -112,8 +118,9 @@ Located in `application/`. This layer orchestrates the flow between the public A
 | `RateLimitExecutor` | Port (inbound) defining the `execute()` command |
 | `RateLimitService` | Orchestrates a full `use()` call: builds context, runs the atomic operation, maps the result. Receives the `Logger` and emits per-request logs |
 | `RateLimitAtomicOperation` | Adapter that wraps an algorithm call into the atomic operation the store can execute |
-| `RateLimitResultMapper` | Converts internal `AlgorithmResult`/decisions into the public `RateLimitResult` DTO |
-| `ports.in.RateLimitResult` | Public result DTO |
+| `RateLimitResultMapper` | Converts internal `AlgorithmResult`/decisions into the public `RateLimitResult` DTO (in `api/`) |
+| `VersionedStateCodec` | Serializes/deserializes state with a magic marker and a format-version prefix; throws `CorruptedStateException` on invalid data |
+| `CorruptedStateException` | Signals state bytes that cannot be decoded (bad magic, unknown version, truncated payload) |
 | `ports.out.*` | Outbound contracts the store must implement (including `Logger`) |
 
 ---
@@ -228,8 +235,8 @@ public interface Logger {
 
 | Implementation | Location | Behavior |
 |---|---|---|
-| `NoOpLogger` | `infraestructure` | Discards every message. **Default** when no logger is supplied, so the library is silent out of the box |
-| `ConsoleLogger` | `infraestructure` | Prints timestamped, leveled messages to `stdout` (`stderr` for `ERROR`). Configurable minimum level and logger name |
+| `NoOpLogger` | `logging/` (core) | Discards every message. **Default** when no logger is supplied, so the library is silent out of the box |
+| `ConsoleLogger` | `logging/` (core) | Prints timestamped, leveled messages to `stdout` (`stderr` for `ERROR`). Configurable minimum level and logger name |
 
 ### Propagation
 
@@ -249,7 +256,7 @@ RateLimitStore / stores (logger, for store-level diagnostics)
 
 - `RateLimit.build(...)` accepts a `Logger` via overloads; the existing overloads default to `NoOpLogger`.
 - `RateLimitService` passes the logger to `RateLimitAtomicOperation` and logs request decisions (allowed / denied with `retryAfter`).
-- Store implementations (`InMemoryStore`, `RedisStore`, `LettuceKeyValueStore`) accept an optional logger to report state expiration, CAS conflicts, and retries.
+- Store implementations (`InMemoryStore`, `RedisStore`) accept an optional logger to report state expiration, `WATCH` conflicts, and retries.
 
 This keeps the domain layer **free of logging concerns**: algorithms, states, and policies never reference the `Logger`.
 
@@ -316,7 +323,7 @@ With the included `InMemoryStore`, each application instance keeps its own local
 | Single instance | Accurate (all requests hit one store) |
 | Multi-instance with in-memory stores | Each instance has its own counter -> limit is effectively multiplied |
 
-The solution is a **shared storage backend** (e.g., Redis). All instances read and update the same state, guaranteeing a global limit. <sup>1</sup>
+The solution is a **shared storage backend** (e.g., Redis). All instances read and update the same state, guaranteeing a global limit.
 
 ```
   App1  App2  App3
@@ -328,7 +335,22 @@ The solution is a **shared storage backend** (e.g., Redis). All instances read a
    +---------+
 ```
 
-<small>1. A Redis store is planned. Because atomicity is already part of the `RateLimitStore` contract, adding a Redis backend does not require any changes to the domain layer -- only a new infrastructure adapter.</small>
+### How the Redis store works
+
+The `RedisStore` in `rate-limit-redis` implements the `RateLimitStore` contract over a single Redis key per identifier using the **`WATCH / MULTI / EXEC`** protocol:
+
+1. Check out a dedicated connection from the Lettuce connection pool.
+2. `WATCH identifier` -- the Redis server tracks changes to that key for this connection.
+3. `GET identifier` -- read the current serialized state; missing or undecodable state is treated as absent.
+4. Run the algorithm in Java; build the new serialized state and its TTL.
+5. `MULTI`, then `SET identifier value PX ttl`, then `EXEC`.
+6. If another process modified the key between `WATCH` and `EXEC`, the transaction aborts (`wasDiscarded()`); the whole operation is retried with a bounded retry count and jittered exponential backoff to avoid starvation under contention.
+
+Each unit of work runs on a **dedicated connection** because Redis transactions and `WATCH` are connection-scoped; interleaving `MULTI`/`EXEC` calls across threads on a shared connection is not allowed by the Redis protocol.
+
+Persisted values are encoded with `VersionedStateCodec` (`"RL"` magic + version byte + payload). Because the codec is part of the core, states written by any version of the library remain forward-readable; corrupt or truncated data is treated as absent (with a warning) and rewritten from scratch.
+
+Because atomicity for a single identifier is already part of the `RateLimitStore` contract, adding a Redis backend required **no changes** to the domain layer -- only a new infrastructure adapter in its own module.
 
 ---
 
@@ -351,10 +373,11 @@ The rest of the pipeline (atomic operation, mapping, store) is generic and needs
 
 To add a new storage backend:
 
-1. Implement `RateLimitStore` with `executeAtomically()`.
-2. Guarantee per-identifier atomicity in the implementation.
-3. Enforce state expiration internally (drop expired states when read).
-4. Emit store-level diagnostics through an optional `Logger` (state expiration, CAS conflicts, retries).
-5. Add a factory method in `api/Persistence.java`.
+1. Create a new Maven module (e.g. `rate-limit-<backend>`) depending on `rate-limit-core`.
+2. Implement `RateLimitStore` with `executeAtomically()`.
+3. Guarantee per-identifier atomicity in the implementation (e.g. in-memory locking, Redis `WATCH/MULTI/EXEC`).
+4. Enforce state expiration internally (drop expired states when read).
+5. Emit store-level diagnostics through an optional `Logger` (state expiration, watch conflicts, retries).
+6. Add a `<backend>.Persistence` factory class in that module (mirroring `inmemory.Persistence` / `redis.Persistence`) so the public surface stays at a single entry point while dependencies stay minimal.
 
-The `AtomicOperation` and `StoreState` types make the store implementation independent of any specific algorithm.
+The `AtomicOperation`, `StoreState`, and `StateCodec` types make the store implementation independent of any specific algorithm.
