@@ -29,7 +29,7 @@ import io.github.lauto5.rateLimit.logging.NoOpLogger;
  */
 public class RedisStore implements RateLimitStore, AutoCloseable {
 
-	private static final int MAX_RETRIES = 10;
+	private static final int MAX_RETRIES = 25;
 
 	private static final long MIN_TTL_MILLIS = 1L;
 
@@ -86,9 +86,9 @@ public class RedisStore implements RateLimitStore, AutoCloseable {
 					+ "' on attempt " + (attempt + 1) + "; retrying");
 
 			/*
-			 * Backoff exponencial con jitter completo (0..2^intento, tope 16ms) para
-			 * desincronizar los reintentos bajo contencion alta: sin la espera, todos los
-			 * contendientes vuelven a mirar a la vez y pueden starvearse mutuamente (livelock).
+* Backoff exponencial con jitter completo (0..2^intento, tope 64ms) para
+		 * desincronizar los reintentos bajo contencion alta: sin la espera, todos los
+		 * contendientes vuelven a mirar a la vez y pueden starvearse mutuamente (livelock).
 			 */
 			if (attempt < MAX_RETRIES - 1) {
 				backoffBeforeRetry(attempt);
@@ -130,7 +130,7 @@ public class RedisStore implements RateLimitStore, AutoCloseable {
 
 	private void backoffBeforeRetry(int attempt) {
 
-		long maxMillis = Math.min(1L << attempt, 16L);
+		long maxMillis = Math.min(1L << attempt, 64L);
 		long sleepMillis = ThreadLocalRandom.current().nextLong(0L, maxMillis + 1L);
 
 		if (sleepMillis == 0L) {
