@@ -5,12 +5,12 @@
 	<parent>
 		<groupId>io.github.lauto5</groupId>
 		<artifactId>rate-limit</artifactId>
-		<version>0.0.1-SNAPSHOT</version>
+		<version>1.0.0</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 	<artifactId>rate-limit-inmemory</artifactId>
 	<name>rate limit in-memory</name>
-	<description>Implementacion de persistencia en memoria para rate limiting.</description>
+	<description>In-memory persistence implementation for rate limiting.</description>
 
 	<dependencies>
 
@@ -32,4 +32,39 @@
 		</dependency>
 
 	</dependencies>
+
+	<build>
+		<plugins>
+
+			<!-- Sources JAR requerido por Central -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar-no-fork</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- Javadoc JAR requerido por Central -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+		</plugins>
+	</build>
+
 </project>

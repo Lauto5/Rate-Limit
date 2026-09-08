@@ -4,11 +4,33 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.github.lauto5</groupId>
 	<artifactId>rate-limit</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0</version>
 	<packaging>pom</packaging>
 	<name>rate limit</name>
 	<description>Lightweight extensible rate limiting library for Java built on hexagonal architecture.</description>
-	<url>https://github.com/lauto5/Rate-Limit</url>
+	<url>https://github.com/Lauto5/Rate-Limit</url>
+
+	<licenses>
+		<license>
+			<name>MIT License</name>
+			<url>https://opensource.org/licenses/MIT</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<id>Lauto5</id>
+			<name>Lauto5</name>
+			<email>169007709+Lauto5@users.noreply.github.com</email>
+		</developer>
+	</developers>
+
+	<scm>
+		<connection>scm:git:git@github.com:Lauto5/Rate-Limit.git</connection>
+		<developerConnection>scm:git:ssh://git@github.com/Lauto5/Rate-Limit.git</developerConnection>
+		<url>https://github.com/Lauto5/Rate-Limit</url>
+	</scm>
 
 	<modules>
 		<module>rate-limit-core</module>
@@ -39,6 +61,13 @@
 		<maven.enforcer.plugin.version>3.5.0</maven.enforcer.plugin.version>
 		<jacoco.plugin.version>0.8.12</jacoco.plugin.version>
 		<exec.plugin.version>3.5.0</exec.plugin.version>
+		<maven.source.plugin.version>3.3.1</maven.source.plugin.version>
+		<maven.javadoc.plugin.version>3.12.0</maven.javadoc.plugin.version>
+		<maven.gpg.plugin.version>3.2.8</maven.gpg.plugin.version>
+		<central.publishing.plugin.version>0.11.0</central.publishing.plugin.version>
+		<!-- Solo publican con '-Ppublish'; por defecto nunca suben nada. -->
+		<central.autoPublish>false</central.autoPublish>
+		<central.skipPublishing>false</central.skipPublishing>
 	</properties>
 
 	<dependencyManagement>
@@ -133,6 +162,34 @@
 					<version>${exec.plugin.version}</version>
 				</plugin>
 
+				<!-- Sources JAR por modulo publicable (requisito de Central) -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-source-plugin</artifactId>
+					<version>${maven.source.plugin.version}</version>
+				</plugin>
+
+				<!-- Javadoc JAR por modulo publicable (requisito de Central) -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<version>${maven.javadoc.plugin.version}</version>
+				</plugin>
+
+				<!-- Firma GPG de artifacts (perfil 'publish') -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-gpg-plugin</artifactId>
+					<version>${maven.gpg.plugin.version}</version>
+				</plugin>
+
+				<!-- Publicacion en Maven Central / Central Portal (perfil 'publish') -->
+				<plugin>
+					<groupId>org.sonatype.central</groupId>
+					<artifactId>central-publishing-maven-plugin</artifactId>
+					<version>${central.publishing.plugin.version}</version>
+				</plugin>
+
 			</plugins>
 		</pluginManagement>
 
@@ -203,5 +260,51 @@
 
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>publish</id>
+			<!-- Pipeline de release: 'mvn -Ppublish clean deploy' ejecuta todo sin
+			     pasos manuales intermedios (compile, test, sources, javadoc, firma
+			     GPG y bundle/subida a Central). Por defecto no sube ni publica nada:
+			     autoPublish=false: el alta final se confirma en Central Portal. -->
+			<build>
+				<plugins>
+
+					<!-- Firma criptografica de cada artifact (requisito de Central).
+					     Requiere una clave GPG local; los secretos viven en ~/.m2/settings.xml
+					     o como -Dgpg.keyname/-Dgpg.passphrase, nunca en el repositorio. -->
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+
+					<!-- 'mvn deploy' genera central-bundle.zip con jar/sources/javadoc/firmas/
+					     checksums y lo sube al Central Portal. Credenciales: server 'central'
+					     en settings.xml (user token de central.sonatype.com). -->
+					<plugin>
+						<groupId>org.sonatype.central</groupId>
+						<artifactId>central-publishing-maven-plugin</artifactId>
+						<extensions>true</extensions>
+						<configuration>
+							<publishingServerId>central</publishingServerId>
+							<autoPublish>${central.autoPublish}</autoPublish>
+							<waitUntil>validated</waitUntil>
+							<skipPublishing>${central.skipPublishing}</skipPublishing>
+						</configuration>
+					</plugin>
+
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 
 </project>

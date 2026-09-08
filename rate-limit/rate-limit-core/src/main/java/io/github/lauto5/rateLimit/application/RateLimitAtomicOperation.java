@@ -20,7 +20,7 @@ import io.github.lauto5.rateLimit.application.logging.NoOpLogger;
  * <p>Given a {@link RateLimitAlgorithm}, a policy and an {@link AlgorithmContext}, this
  * operation: (1) creates an initial state when the store holds none, (2) runs the algorithm
  * against the resolved state, and (3) computes the expiry instant for the resulting state. It
- * is executed atomically by a {@link RateLimitStore}.
+ * is executed atomically by a {@link io.github.lauto5.rateLimit.application.ports.out.RateLimitStore}.
  *
  * @param <S> the concrete algorithm state type
  * @param <P> the concrete policy type
