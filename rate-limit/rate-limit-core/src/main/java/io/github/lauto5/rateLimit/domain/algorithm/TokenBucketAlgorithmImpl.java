@@ -1,6 +1,5 @@
 package io.github.lauto5.rateLimit.domain.algorithm;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -26,15 +25,16 @@ public final class TokenBucketAlgorithmImpl implements TokenBucketAlgorithm {
 		@Override
 		public byte[] encode(TokenBucketState state) {
 
-			String raw = state.getTokens() + "|" + state.getLastRefill().toEpochMilli();
-
-			return raw.getBytes(StandardCharsets.UTF_8);
+			return PipeDelimitedCodec.encode(
+					String.valueOf(state.getTokens()),
+					String.valueOf(state.getLastRefill().toEpochMilli())
+			);
 		}
 
 		@Override
 		public TokenBucketState decode(byte[] data) {
 
-			String[] parts = new String(data, StandardCharsets.UTF_8).split("\\|");
+			String[] parts = PipeDelimitedCodec.decode(data);
 
 			double tokens = Double.parseDouble(parts[0]);
 			Instant lastRefill = Instant.ofEpochMilli(Long.parseLong(parts[1]));

@@ -1,6 +1,5 @@
 package io.github.lauto5.rateLimit.domain.algorithm;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -25,15 +24,16 @@ public final class FixedWindowAlgorithmImpl implements FixedWindowAlgorithm {
 		@Override
 		public byte[] encode(FixedWindowState state) {
 
-			String raw = state.getCount() + "|" + state.getWindowStart().toEpochMilli();
-
-			return raw.getBytes(StandardCharsets.UTF_8);
+			return PipeDelimitedCodec.encode(
+					String.valueOf(state.getCount()),
+					String.valueOf(state.getWindowStart().toEpochMilli())
+			);
 		}
 
 		@Override
 		public FixedWindowState decode(byte[] data) {
 
-			String[] parts = new String(data, StandardCharsets.UTF_8).split("\\|");
+			String[] parts = PipeDelimitedCodec.decode(data);
 
 			int count = Integer.parseInt(parts[0]);
 			Instant windowStart = Instant.ofEpochMilli(Long.parseLong(parts[1]));

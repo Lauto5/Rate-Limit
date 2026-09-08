@@ -1,6 +1,5 @@
 package io.github.lauto5.rateLimit.domain.algorithm;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -25,15 +24,16 @@ public final class LeakyBucketAlgorithmImpl implements LeakyBucketAlgorithm {
 		@Override
 		public byte[] encode(LeakyBucketState state) {
 
-			String raw = state.getWater() + "|" + state.getLastLeak();
-
-			return raw.getBytes(StandardCharsets.UTF_8);
+			return PipeDelimitedCodec.encode(
+					String.valueOf(state.getWater()),
+					String.valueOf(state.getLastLeak())
+			);
 		}
 
 		@Override
 		public LeakyBucketState decode(byte[] data) {
 
-			String[] parts = new String(data, StandardCharsets.UTF_8).split("\\|");
+			String[] parts = PipeDelimitedCodec.decode(data);
 
 			double water = Double.parseDouble(parts[0]);
 			long lastLeak = Long.parseLong(parts[1]);
