@@ -33,7 +33,7 @@ public class Algorithm {
 	public static FixedWindowAlgorithm fixedWindow() {
 		return new FixedWindowAlgorithmImpl();
 	}
-	
+
 	/**
 	 * Returns a new Token Bucket algorithm implementation.
 	 *
@@ -43,49 +43,45 @@ public class Algorithm {
 	public static TokenBucketAlgorithm tokenBucket() {
 		return new TokenBucketAlgorithmImpl();
 	}
-	
+
 	/**
 	 * Returns a new Sliding Window Counter algorithm implementation.
 	 *
 	 * @return a {@link SlidingWindowCounterAlgorithm} that approximates a sliding window by
 	 *         weighting fixed sub-window buckets
 	 */
-	public static SlidingWindowCounterAlgorithm slidingWindowCounter()
-	{
+	public static SlidingWindowCounterAlgorithm slidingWindowCounter() {
 		return new SlidingWindowCounterAlgorithmImpl();
 	}
-	
+
 	/**
 	 * Returns a new Sliding Window Log algorithm implementation.
 	 *
 	 * @return a {@link SlidingWindowLogAlgorithm} that tracks each request timestamp within a
 	 *         precisely sliding window
 	 */
-	public static SlidingWindowLogAlgorithm slidingWindowLog()
-	{
+	public static SlidingWindowLogAlgorithm slidingWindowLog() {
 		return new SlidingWindowLogAlgorithmImpl();
 	}
-	
+
 	/**
 	 * Returns a new Leaky Bucket algorithm implementation.
 	 *
 	 * @return a {@link LeakyBucketAlgorithm} that smooths traffic by draining a queue at a
 	 *         fixed leak rate
 	 */
-	public static LeakyBucketAlgorithm leakyBucket()
-	{
+	public static LeakyBucketAlgorithm leakyBucket() {
 		return new LeakyBucketAlgorithmImpl();
 	}
-	
+
 	/**
 	 * Returns a new GCRA (Generic Cell Rate Algorithm) implementation.
 	 *
 	 * @return a {@link GcraAlgorithm} that throttles traffic using an emission interval and a
 	 *         burst tolerance
 	 */
-	public static GcraAlgorithm gcra()
-	{
+	public static GcraAlgorithm gcra() {
 		return new GcraAlgorithmImpl();
 	}
-	
+
 }
