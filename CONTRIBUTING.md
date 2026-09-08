@@ -85,12 +85,12 @@ mvn jacoco:report
 mvn compile exec:java -Dexec.mainClass="com.example.MyMain" -Dexec.args="--arg1 value"
 ```
 
-> The Maven Enforcer pins the build to Java 17+ / Maven 3.9+. If `mvn` refuses to run, check `mvn -version`.
+> The Maven Enforcer pins the build to **JDK 9+** / Maven 3.9+ (the reactor compiles against the Java 8 API with `--release 8`). If `mvn` refuses to run, check `mvn -version`.
 
 ### Debug Scripts (Python)
 
 To avoid typing the multi-command workflows above, the repository ships a Python helper at
-`debug scripts/run.py`. It wraps every project command (compile, test, verify, install,
+`debug-scripts/run.py`. It wraps every project command (compile, test, verify, install,
 examples, git status) behind one small CLI, so contributors can run the whole pipeline with a
 single call.
 
@@ -100,7 +100,7 @@ Requirements:
 - **Maven** on the `PATH`.
 - **Docker** only for the Redis integration tests (the script warns you if it is missing).
 
-Run it from the `debug scripts/` folder:
+Run it from the `debug-scripts/` folder:
 
 ```bash
 python3 run.py all      # full pipeline (see below)
@@ -140,7 +140,7 @@ The project follows **hexagonal architecture** (ports and adapters):
 | **Public API** | `api` | Factory classes (`Algorithm`, `Persistence`) |
 | **Application** | `application` | Orchestration, adapters, ports, result mapping |
 | **Domain** | `domain` | Core logic: algorithms, state, policies, models |
-| **Infrastructure** | `infraestructure` | Adapters: stores, `ConsoleLogger`, `NoOpLogger` |
+| **Infrastructure** | `infrastructure` | Adapters: stores, `ConsoleLogger`, `NoOpLogger` |
 
 When adding a new feature, place it in the correct layer. The domain layer must have **no dependencies** on infrastructure or external frameworks.
 
@@ -185,7 +185,7 @@ Open an issue describing:
 
 ### Java
 
-- Use Java 17+ features when appropriate (records, sealed classes, pattern matching).
+- The reactor compiles against the Java 8 API (`--release 8`): do not use language or API features newer than Java 8 (records, sealed classes, pattern matching, `var`, `List.of`, ...). Build on a JDK 9+ so the `--release 8` flag is available.
 - Use `Optional` for nullable return values in public APIs.
 - Validate inputs at constructor boundaries and throw `IllegalArgumentException` for invalid arguments.
 - Use `java.time` API for all date/time operations. Do not use `System.currentTimeMillis()`.
@@ -193,7 +193,7 @@ Open an issue describing:
 ### Architecture
 
 - **Domain layer** (`domain/`) must not depend on infrastructure or application layers.
-- **Ports** (`application/ports/`) define contracts. Implementations belong in `infraestructure/`.
+- **Ports** (`application/ports/`) define contracts. Implementations belong in `infrastructure/`.
 - Algorithms must implement `RateLimitAlgorithm<S, P>` with typed state and policy generics.
 - State classes must be immutable value objects.
 

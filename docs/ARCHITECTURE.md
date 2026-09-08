@@ -382,37 +382,37 @@ concurrent operations** (limit 100) and asserts `allowed <= limit` under real co
 
 ---
 
-## Etapa 3 -- Revisión final y decisión de merge
+## Phase 3 -- Final review and merge decision
 
-Auditoría de cierre del feature: cada área revisada quedó clasificada
-(🔴 corregir / 🟠 ajustar / 🟡 documentar / 🟢 validar):
+Closing audit of the feature: every reviewed area was classified
+(🔴 fix / 🟠 adjust / 🟡 document / 🟢 validated):
 
-| Área auditada | Clasificación | Justificación |
+| Audited area | Classification | Justification |
 |---|---|---|
-| `RedisStore` (retries, backoff, TTL, namespace, validación) | 🟢 | Bounded `MAX_RETRIES=25`, backoff 0..64 ms con interrupción restaurada, TTL con piso de 1 ms, keys con namespace, identifier validado; cubierto por `RedisStoreUnitTest`. |
-| `LettuceTransactionPort` (limpieza de conexión, pool, conflicto vs infra) | 🟢 | `DISCARD`/`UNWATCH` best-effort antes de devolver al pool; conflicto `WATCH` devuelve `null`, error de infraestructura se propaga; redis reusable tras fallo en body. |
-| Concurrencia real | 🟢 | `LettuceTransactionPortIntegrationTest$ConcurrencyCases` (barrera), 20 threads en `RedisStoreUnitTest`, 1000 operaciones sobre una key en `StoreContractTest`. |
-| WATCH/MULTI/EXEC vs errores de infra` | 🟢 | `infraErrorShouldPropagateWithoutRetrying`, `maxRetriesShouldBeExhaustedOnPersistentConflict`. |
-| TTL / expiración | 🟢 | Invariante `StoreState.expiresAt` = metadata; Redis usa `PEXPIRE`, InMemory usa `isExpired` al leer; contract test confirma decisiones idénticas. |
-| Corrupción de estado (fail-open/fail-closed) | 🟠 → 🟢 | Política documentada y frontiera total: cualquier payload indecodificable (aun con header válido) se normaliza a `CorruptedStateException` y el store lo reescribe desde cero. |
-| Dependencias Maven | 🟠 → 🟢 | Dirección `inmemory/redis -> core` respetada; se eliminó la entrada muerta `slf4j-simple` del `dependencyManagement` del parent. El consumidor elige su proveedor SLF4J. |
-| API pública | 🟡 | `api/`, `Persistence` y policies forman la superficie soportada. Clases de `application`/`infrastructure` son públicas por cohesión de paquete; sellarlas es futuro (`feature/api-v2`). |
-| Tests de integración | 🟢 | Testcontainers (`redis:7-alpine`) en integración y contract tests entre `InMemoryStore` y `RedisStore`. |
-| Java 8 (runtime) vs JDK de build | 🟢 | `--release 8` + enforcer `[9,)`; política documentada en README. |
-| Documentación | 🟢 | README, ARCHITECTURE.md y CONTRIBUTING.md al día. |
+| `RedisStore` (retries, backoff, TTL, namespace, validation) | 🟢 | Bounded `MAX_RETRIES=25`, backoff 0..64 ms with restored interruption, TTL with a 1 ms floor, namespaced keys, validated identifier; covered by `RedisStoreUnitTest`. |
+| `LettuceTransactionPort` (connection cleanup, pool, conflict vs infra) | 🟢 | Best-effort `DISCARD`/`UNWATCH` before returning to the pool; `WATCH` conflicts return `null`, infrastructure errors propagate; connection reusable after a body failure. |
+| Real concurrency | 🟢 | `LettuceTransactionPortIntegrationTest$ConcurrencyCases` (barrier), 20 threads in `RedisStoreUnitTest`, 1000 operations over one key in `StoreContractTest`. |
+| WATCH/MULTI/EXEC vs infrastructure errors | 🟢 | `infraErrorShouldPropagateWithoutRetrying`, `maxRetriesShouldBeExhaustedOnPersistentConflict`. |
+| TTL / expiration | 🟢 | Invariant `StoreState.expiresAt` = metadata; Redis uses `PEXPIRE`, InMemory uses `isExpired` on read; the contract test confirms identical decisions. |
+| State corruption (fail-open/fail-closed) | 🟠 → 🟢 | Policy documented and fully covered: any undecodable payload (even with a valid header) is normalized to `CorruptedStateException` and the store rewrites it from scratch. |
+| Maven dependencies | 🟠 → 🟢 | Direction `inmemory/redis -> core` respected; the dead `slf4j-simple` entry was removed from the parent's `dependencyManagement`. The consumer chooses their SLF4J provider. |
+| Public API | 🟡 | `api/`, `Persistence` and policies form the supported surface. `application`/`infrastructure` classes are public for package cohesion; sealing them is future work (`feature/api-v2`). |
+| Integration tests | 🟢 | Testcontainers (`redis:7-alpine`) in integration and contract tests between `InMemoryStore` and `RedisStore`. |
+| Java 8 (runtime) vs build JDK | 🟢 | `--release 8` + enforcer `[9,)`; policy documented in README. |
+| Documentation | 🟢 | README, ARCHITECTURE.md and CONTRIBUTING.md up to date. |
 
-Decisiones documentadas que quedan **explícitamente fuera de esta rama** (features futuros):
+Documented decisions that remain **explicitly outside this branch** (future features):
 
-- `feature/redis-hardening` -- pool de conexiones fijo (`maxTotal=8`, bloqueo indefinido al agotar) no configurable; hacerlo configurable y medir latencia de cola.
-- `feature/inmemory-eviction` -- `InMemoryStore` no evicta entradas vencidas; crecimiento acotado del mapa para identifiers arbitrarios.
-- `feature/api-v2` -- sellar clases internas de `application`/`infrastructure` y reducir la doble superficie de `RateLimitResult` (constructor + factories).
-- `feature/redis-lua-atomic-operations` -- scripts Lua en reemplazo de WATCH/MULTI/EXEC.
-- `feature/observability` -- Micrometer / métricas de conflictos, reintentos y latencia.
-- `feature/spring-boot-integration` -- autoconfiguración para Spring Boot.
+- `feature/redis-hardening` -- fixed connection pool (`maxTotal=8`, indefinite blocking when exhausted) is not configurable; make it configurable and measure queue latency.
+- `feature/inmemory-eviction` -- `InMemoryStore` does not evict expired entries; map growth is bounded for arbitrary identifiers.
+- `feature/api-v2` -- seal the internal `application`/`infrastructure` classes and reduce the double surface of `RateLimitResult` (constructor + factories).
+- `feature/redis-lua-atomic-operations` -- Lua scripts replacing WATCH/MULTI/EXEC.
+- `feature/observability` -- Micrometer / metrics for conflicts, retries and latency.
+- `feature/spring-boot-integration` -- autoconfiguration for Spring Boot.
 
-**Decisión:** el feature está listo para merge a `main`. Todos los puntos del criterio de la
-etapa 3 se cumplen: sin `🔴` pendientes, `🟠` resueltos (con tests), `🟡` documentados, `🟢`
-validados, suite completa en verde (231 tests) y política Java 8 / JDK de build documentada.
+**Decision:** the feature is ready to merge to `main`. Every point of the phase 3
+criterion is met: no pending `🔴`, `🟠` resolved (with tests), `🟡` documented, `🟢`
+validated, full suite green (231 tests) and the Java 8 / build JDK policy documented.
 
 ---
 
