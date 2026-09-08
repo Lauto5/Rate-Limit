@@ -2,6 +2,7 @@ package io.github.lauto5.rateLimit.application.ports.out;
 
 import java.time.Instant;
 
+import io.github.lauto5.rateLimit.domain.algorithm.StateCodec;
 import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
 
 /**

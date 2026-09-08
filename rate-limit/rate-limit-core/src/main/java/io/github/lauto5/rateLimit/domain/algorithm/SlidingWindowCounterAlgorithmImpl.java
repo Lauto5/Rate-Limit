@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
 import io.github.lauto5.rateLimit.domain.algorithmState.SlidingWindowCounterState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;

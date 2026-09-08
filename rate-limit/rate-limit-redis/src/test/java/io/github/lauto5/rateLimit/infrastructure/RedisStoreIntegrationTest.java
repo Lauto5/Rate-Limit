@@ -27,7 +27,7 @@ import org.testcontainers.utility.DockerImageName;
 import io.github.lauto5.rateLimit.application.RateLimitAtomicOperation;
 import io.github.lauto5.rateLimit.application.VersionedStateCodec;
 import io.github.lauto5.rateLimit.application.ports.out.AtomicOperationResult;
-import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
+import io.github.lauto5.rateLimit.domain.algorithm.StateCodec;
 import io.github.lauto5.rateLimit.domain.algorithm.FixedWindowAlgorithmImpl;
 import io.github.lauto5.rateLimit.domain.algorithmState.FixedWindowState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
@@ -77,7 +77,7 @@ public class RedisStoreIntegrationTest {
 		return new RateLimitAtomicOperation<>(algorithm, policy, new AlgorithmContext(now));
 	}
 
-	private StateCodec<FixedWindowState> wireCodec(io.github.lauto5.rateLimit.application.ports.out.StateCodec<FixedWindowState> codec) {
+	private StateCodec<FixedWindowState> wireCodec(io.github.lauto5.rateLimit.domain.algorithm.StateCodec<FixedWindowState> codec) {
 		return new VersionedStateCodec<>(codec);
 	}
 

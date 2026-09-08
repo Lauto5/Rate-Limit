@@ -4,7 +4,7 @@ import java.time.Instant;
 
 import io.github.lauto5.rateLimit.application.ports.out.AtomicOperation;
 import io.github.lauto5.rateLimit.application.ports.out.AtomicOperationResult;
-import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
+import io.github.lauto5.rateLimit.domain.algorithm.StateCodec;
 import io.github.lauto5.rateLimit.application.ports.out.StoreState;
 import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;

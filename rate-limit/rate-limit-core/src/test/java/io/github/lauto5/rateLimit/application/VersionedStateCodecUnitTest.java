@@ -9,7 +9,7 @@ import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
 
-import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
+import io.github.lauto5.rateLimit.domain.algorithm.StateCodec;
 import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
 
 class VersionedStateCodecUnitTest {

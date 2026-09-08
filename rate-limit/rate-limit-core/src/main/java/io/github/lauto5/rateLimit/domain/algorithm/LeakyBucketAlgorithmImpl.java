@@ -3,7 +3,6 @@ package io.github.lauto5.rateLimit.domain.algorithm;
 import java.time.Duration;
 import java.time.Instant;
 
-import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
 import io.github.lauto5.rateLimit.domain.algorithmState.LeakyBucketState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;

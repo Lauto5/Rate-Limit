@@ -2,7 +2,7 @@ package io.github.lauto5.rateLimit.application;
 
 import java.util.Arrays;
 
-import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
+import io.github.lauto5.rateLimit.domain.algorithm.StateCodec;
 import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
 
 /**

@@ -4,7 +4,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 
-import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
 import io.github.lauto5.rateLimit.domain.algorithmState.GcraState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;

@@ -1,6 +1,6 @@
 package io.github.lauto5.rateLimit.testdoubles;
 
-import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
+import io.github.lauto5.rateLimit.domain.algorithm.StateCodec;
 import io.github.lauto5.rateLimit.domain.algorithm.RateLimitAlgorithm;
 import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;

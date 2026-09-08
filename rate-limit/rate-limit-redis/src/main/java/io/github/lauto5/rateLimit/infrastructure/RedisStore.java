@@ -10,10 +10,10 @@ import io.github.lauto5.rateLimit.application.ports.out.AtomicOperation;
 import io.github.lauto5.rateLimit.application.ports.out.AtomicOperationResult;
 import io.github.lauto5.rateLimit.application.ports.out.Logger;
 import io.github.lauto5.rateLimit.application.ports.out.RateLimitStore;
-import io.github.lauto5.rateLimit.application.ports.out.StateCodec;
+import io.github.lauto5.rateLimit.domain.algorithm.StateCodec;
 import io.github.lauto5.rateLimit.application.ports.out.StoreState;
 import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
-import io.github.lauto5.rateLimit.logging.NoOpLogger;
+import io.github.lauto5.rateLimit.application.logging.NoOpLogger;
 
 /**
  * {@link RateLimitStore} backed by a Redis key holding the serialized algorithm state.
