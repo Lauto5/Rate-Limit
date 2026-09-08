@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.charset.StandardCharsets;
@@ -203,6 +204,35 @@ public class LettuceTransactionPortIntegrationTest {
 		Thread.sleep(400L);
 
 		// Assert - Redis elimino la key por su cuenta
+		assertNull(transactionPort.get(key));
+
+	}
+
+	@Test
+	void connectionShouldRemainUsableAfterBodyThrows() {
+
+		// Arrange
+		String key = uniqueKey();
+
+		// Act - el body falla tras el WATCH; la excepcion debe propagarse
+		IllegalStateException thrown = assertThrows(IllegalStateException.class, () ->
+				transactionPort.executeTransaction(key, current -> {
+					throw new IllegalArgumentException("boom");
+				})
+		);
+
+		assertTrue(thrown.getMessage().contains(key));
+		assertTrue(thrown.getCause() instanceof IllegalArgumentException,
+				"El error real debe conservarse como causa y NO tratarse como conflicto de WATCH");
+
+		// Act - la misma conexion pooled (w WATCH/MULTI residuales limpiados) debe
+		// poder ejecutar una transaccion normal sobre OTRA key
+		String otherKey = uniqueKey();
+		String value = "after-cleanup";
+		assertEquals(value,
+				transactionPort.executeTransaction(otherKey, current -> write(value, 60_000L)));
+
+		// Assert - y la key fallida no quedo escrita
 		assertNull(transactionPort.get(key));
 
 	}

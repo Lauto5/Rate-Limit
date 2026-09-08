@@ -24,6 +24,10 @@ import io.github.lauto5.rateLimit.logging.NoOpLogger;
  * puede intercalarse entre threads sobre una misma conexion. Si la key cambia entre el
  * {@code WATCH} y el {@code EXEC}, Redis aborta la transaccion y {@link
  * #executeTransaction} devuelve {@code null} para que el {@link RedisStore} reintente.
+ *
+ * <p>Si algo falla (body, red, protocolo), la conexion se limpia con <code>DISCARD</code>/
+ * <code>UNWATCH</code> (best-effort) antes de devolverla al pool, de modo que nunca se
+ * reutilice una conexion con {@code WATCH}/{@code MULTI} residuales.
  */
 public class LettuceTransactionPort implements RedisTransactionPort {
 
@@ -68,13 +72,17 @@ public class LettuceTransactionPort implements RedisTransactionPort {
 	public <T> T executeTransaction(String key, TransactionBody<T> body) {
 
 		StatefulRedisConnection<String, byte[]> connection = null;
+		RedisCommands<String, byte[]> sync = null;
+		boolean watched = false;
+		boolean inTransaction = false;
 
 		try {
 			connection = pool.borrowObject();
-
-			RedisCommands<String, byte[]> sync = connection.sync();
+			sync = connection.sync();
 
 			sync.watch(key);
+			watched = true;
+
 			byte[] currentValue = sync.get(key);
 			logger.debug("WATCH + GET '" + key + "' -> "
 					+ (currentValue == null ? "<absent>" : currentValue.length + " bytes"));
@@ -87,9 +95,11 @@ public class LettuceTransactionPort implements RedisTransactionPort {
 			}
 
 			sync.multi();
+			inTransaction = true;
 			sync.set(key, write.getNewValue());
 			sync.pexpire(key, write.getTtlMillis());
 			TransactionResult execResult = sync.exec();
+			inTransaction = false;
 
 			boolean committed = !execResult.wasDiscarded();
 			logger.debug("MULTI/EXEC '" + key + "' with TTL " + write.getTtlMillis()
@@ -98,6 +108,13 @@ public class LettuceTransactionPort implements RedisTransactionPort {
 			return committed ? write.getResult() : null;
 
 		} catch (Exception e) {
+			/*
+			 * Si el WATCH quedo activo o el MULTI quedo abierto, se limpia el estado de la
+			 * conexion (best-effort) ANTES de devolverla al pool: una conexion con WATCH/MULTI
+			 * residuales no debe reutilizarse por otro hilo. El conflicto (EXEC abortado) NO
+			 * llega aqui: se devuelve null y el RedisStore reintenta.
+			 */
+			cleanupTransactionState(sync, watched, inTransaction);
 			throw new IllegalStateException("Fallo la transaccion Redis sobre '" + key + "'", e);
 		} finally {
 			if (connection != null) {
@@ -110,6 +127,24 @@ public class LettuceTransactionPort implements RedisTransactionPort {
 			}
 		}
 
+	}
+
+	private void cleanupTransactionState(RedisCommands<String, byte[]> sync, boolean watched, boolean inTransaction) {
+
+		if (sync == null) {
+			return;
+		}
+
+		try {
+			if (inTransaction) {
+				// DISCARD cierra el MULTI y limpia el WATCH de la conexion
+				sync.discard();
+			} else if (watched) {
+				sync.unwatch();
+			}
+		} catch (Exception e) {
+			logger.warn("No se pudo limpiar el estado de la transaccion: " + e.getMessage());
+		}
 	}
 
 	@Override
