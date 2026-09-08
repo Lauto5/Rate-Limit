@@ -21,6 +21,7 @@ import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
 import io.github.lauto5.rateLimit.domain.model.AllowedDecision;
 import io.github.lauto5.rateLimit.domain.model.DeniedDecision;
 import io.github.lauto5.rateLimit.domain.policies.SlidingWindowCounterPolicy;
+import io.github.lauto5.rateLimit.testdoubles.FixedWindowTestFixtures;
 
 public class SlidingWindowCounterAlgorithmImplUnitTest {
 
@@ -40,7 +41,7 @@ public class SlidingWindowCounterAlgorithmImplUnitTest {
 				);
 
 		fixedNow =
-				Instant.parse("2026-01-01T10:00:00Z");
+				FixedWindowTestFixtures.FIXED_NOW;
 	}
 
 	// ============================================================
