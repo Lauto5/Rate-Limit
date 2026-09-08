@@ -20,6 +20,7 @@ buildNumber.properties
 .settings/
 .vscode/
 .factorypath
+.obsidian/
 
 # --- Entornos y Editores (Neovim / Emacs) ---
 *.swp

@@ -8,10 +8,10 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import io.github.lauto5.rateLimit.api.Algorithm;
-import io.github.lauto5.rateLimit.inmemory.Persistence;
 import io.github.lauto5.rateLimit.api.RateLimitResult;
 import io.github.lauto5.rateLimit.application.ports.out.Logger;
 import io.github.lauto5.rateLimit.domain.policies.FixedWindowPolicy;
+import io.github.lauto5.rateLimit.inmemory.Persistence;
 import io.github.lauto5.rateLimit.testdoubles.RecordingLogger;
 
 class LoggerPropagationTest {

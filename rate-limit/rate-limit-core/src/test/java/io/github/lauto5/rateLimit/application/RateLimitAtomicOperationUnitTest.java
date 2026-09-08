@@ -1,6 +1,8 @@
 package io.github.lauto5.rateLimit.application;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.time.Duration;
 import java.time.Instant;
