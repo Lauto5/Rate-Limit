@@ -255,7 +255,7 @@ RateLimitStore / stores (logger, for store-level diagnostics)
 ```
 
 - `RateLimit.build(...)` accepts a `Logger` via overloads; the existing overloads default to `NoOpLogger`.
-- `RateLimitService` passes the logger to `RateLimitAtomicOperation` and logs request decisions (allowed / denied with `retryAfter`).
+- `RateLimitService` passes the logger to `RateLimitAtomicOperation` and logs request decisions (allowed / denied with `retryAfter`). **Decisions are emitted at `DEBUG`** -- with hundreds of log lines per second per identifier at scale, per-request decisions don't default to `INFO`/`WARN`; stores log expiry (`WARN`) and the service keeps loud levels for actual problems only.
 - Store implementations (`InMemoryStore`, `RedisStore`) accept an optional logger to report state expiration, `WATCH` conflicts, and retries.
 
 This keeps the domain layer **free of logging concerns**: algorithms, states, and policies never reference the `Logger`.
@@ -285,6 +285,15 @@ Every state has an expiration time to prevent unbounded memory growth for inacti
 - The **store** is responsible for enforcing it internally (e.g., dropping expired entries when read).
 
 When a request arrives for an expired state, the store treats it as absent, and the algorithm creates a brand-new initial state.
+
+**Invariant:** `expiresAt` is *persistence metadata* only. Algorithms never read it back --
+the `AlgorithmState` carried by the state object holds its own time-related fields (window
+start, TAT, last refill). Expiry handling is therefore a store concern, enforced with each
+store's own mechanism:
+
+- `InMemoryStore` checks `StoreState.isExpired()` against the operation's clock on read;
+- `RedisStore` derives the key TTL from the operation result's `expiresAt` (`SET ... PX ttl`)
+  and lets Redis drop the key when it lapses -- it does **not** evaluate `expiresAt` itself.
 
 ---
 
@@ -340,17 +349,36 @@ The solution is a **shared storage backend** (e.g., Redis). All instances read a
 The `RedisStore` in `rate-limit-redis` implements the `RateLimitStore` contract over a single Redis key per identifier using the **`WATCH / MULTI / EXEC`** protocol:
 
 1. Check out a dedicated connection from the Lettuce connection pool.
-2. `WATCH identifier` -- the Redis server tracks changes to that key for this connection.
-3. `GET identifier` -- read the current serialized state; missing or undecodable state is treated as absent.
+2. `WATCH <key>` -- the Redis server tracks changes to that key for this connection.
+3. `GET <key>` -- read the current serialized state; missing or undecodable state is treated as absent.
 4. Run the algorithm in Java; build the new serialized state and its TTL.
-5. `MULTI`, then `SET identifier value PX ttl`, then `EXEC`.
+5. `MULTI`, then `SET <key> value PX ttl`, then `EXEC`.
 6. If another process modified the key between `WATCH` and `EXEC`, the transaction aborts (`wasDiscarded()`); the whole operation is retried with a bounded retry count and jittered exponential backoff to avoid starvation under contention.
 
-Each unit of work runs on a **dedicated connection** because Redis transactions and `WATCH` are connection-scoped; interleaving `MULTI`/`EXEC` calls across threads on a shared connection is not allowed by the Redis protocol.
+**Keys are namespaced** (`key = namespace + ":" + identifier`, default namespace
+`rate-limit`, configurable via `RedisStore`/`redis.Persistence` overloads). The namespace
+isolates applications, environments, or versions sharing the same Redis, so they never
+collide on keys.
 
-Persisted values are encoded with `VersionedStateCodec` (`"RL"` magic + version byte + payload). Because the codec is part of the core, states written by any version of the library remain forward-readable; corrupt or truncated data is treated as absent (with a warning) and rewritten from scratch.
+**Failure semantics:** a WATCH conflict is not an error -- it returns `null` and the store
+retries. An infrastructure failure (network, connection, protocol) propagates immediately as
+`IllegalStateException` without being masked as a conflict. In the worst case, persistent
+contention on a single key exhausts the bounded retries (currently `MAX_RETRIES = 25` with
+0..64 ms jitter), adding at most ~1.3 s of latency and then failing loud instead of guessing.
+
+Each unit of work runs on a **dedicated connection** because Redis transactions and `WATCH` are connection-scoped; interleaving `MULTI`/`EXEC` calls across threads on a shared connection is not allowed by the Redis protocol. Before a connection returns to the pool it is guaranteed clean: a failed body/network/protocol path runs best-effort `DISCARD` (if inside `MULTI`) or `UNWATCH` (if only `WATCH` was issued) as `LettuceTransactionPort.cleanupTransactionState`, so a connection with residual `WATCH`/`MULTI` state is never handed to another thread.
+
+Persisted values are encoded with `VersionedStateCodec` (`"RL"` magic + version byte + payload). Because the codec is part of the core, states written by any version of the library remain forward-readable; corrupt or truncated data is treated as absent (with a warning) and rewritten from scratch. The versioning policy is **fail-closed on decode** (an unknown version raises `CorruptedStateException`, never ambiguous interpretation) but **fail-open at the store** (that state is treated as absent and rebuilt), which together keep a mismatched version from silently corrupting counters.
 
 Because atomicity for a single identifier is already part of the `RateLimitStore` contract, adding a Redis backend required **no changes** to the domain layer -- only a new infrastructure adapter in its own module.
+
+### Test of contract between stores
+
+`rate-limit-redis` carries a **contract test** (`StoreContractTest`) that depends on
+`rate-limit-inmemory` (test scope) and runs the *same* fixed-window sequence against both
+stores, asserting identical allowed/denied decisions -- proving the Redis adapter is a
+drop-in replacement for the in-memory one. It also stresses one shared key with **1000
+concurrent operations** (limit 100) and asserts `allowed <= limit` under real contention.
 
 ---
 

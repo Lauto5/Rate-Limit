@@ -197,7 +197,7 @@ ConsoleLogger logger =
 The logger is propagated through the full pipeline, so you get visibility into:
 
 - **Requests** -- each `use()` evaluation for an identifier and policy (`DEBUG`).
-- **Decisions** -- allowed requests (`INFO`) and denied requests with `retryAfter` (`WARN`).
+- **Decisions** -- allowed and denied requests (both `DEBUG`, keeping `INFO`/`WARN` free of per-request noise).
 - **State handling** -- initial-state creation and expired-state detection in the stores (`DEBUG`).
 - **Atomic persistence** -- Redis watch/transaction operations, `WATCH` conflicts and retries (`DEBUG`).
 
@@ -318,7 +318,8 @@ RateLimit<FixedWindowPolicy> rateLimit = RateLimit.build(
 );
 ```
 
-Factories: `inMemory()`, `inMemory(logger)`.
+Factories:
+- `inMemory()` / `inMemory(logger)`. Run time is **Java 8+**; build time needs **JDK 9+** (the code is compiled with `--release 8`).
 
 ### Redis (`rate-limit-redis`)
 
@@ -337,7 +338,13 @@ RateLimit<FixedWindowPolicy> rateLimit = RateLimit.build(
 );
 ```
 
-Factories: `inRedis(url)`, `inRedis(url, logger)`. Add the module as a dependency and provide a concrete SLF4J provider at runtime (e.g. `slf4j-simple`).
+Factories:
+- `inRedis(url)` / `inRedis(url, logger)` -- use the default key namespace `rate-limit`.
+- `inRedis(url, namespace)` / `inRedis(url, logger, namespace)` -- keys are written as
+  `namespace + ":" + identifier`, so applications, environments, or versions sharing one
+  Redis never collide.
+
+Add the module as a dependency and provide a concrete SLF4J provider at runtime (e.g. `slf4j-simple`). The runtime contract is **Java 8+** (build needs **JDK 9+**).
 
 ---
 
