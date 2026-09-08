@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.time.Duration;
 import java.time.Instant;
 
 import org.junit.jupiter.api.Nested;
@@ -16,59 +15,44 @@ import io.github.lauto5.rateLimit.application.RateLimitResultMapper;
 import io.github.lauto5.rateLimit.application.ports.out.AtomicOperationResult;
 import io.github.lauto5.rateLimit.domain.algorithmState.FixedWindowState;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
+import io.github.lauto5.rateLimit.testdoubles.FixedWindowTestFixtures;
 
 class RateLimitResultMapperUnitTest {
 
-	private static final Instant FIXED_NOW =
-			Instant.parse("2026-01-01T10:00:00Z");
-
 	private static final Instant RESET_AT =
-			FIXED_NOW.plus(Duration.ofMinutes(1));
-
-	private static final Duration EXPIRES_IN =
-			Duration.ofMinutes(1);
-
-	private static final Duration RETRY_AFTER =
-			Duration.ofSeconds(30);
+			FixedWindowTestFixtures.FIXED_NOW.plus(FixedWindowTestFixtures.ONE_MINUTE);
 
 	// ============================================================
 	// HELPERS
 	// ============================================================
 
-	private FixedWindowState stateWith(int count) {
-		return new FixedWindowState(
-				count,
-				FIXED_NOW
-		);
-	}
-
 	private AlgorithmResult<FixedWindowState> allowedResult(
 			FixedWindowState state,
 			int remaining) {
 
-		return AlgorithmResult.allowed(
+		return FixedWindowTestFixtures.allowedResult(
 				state,
 				remaining,
 				RESET_AT,
-				EXPIRES_IN
+				FixedWindowTestFixtures.ONE_MINUTE
 		);
 	}
 
 	private AlgorithmResult<FixedWindowState> deniedResult(
 			FixedWindowState state) {
 
-		return AlgorithmResult.denied(
+		return FixedWindowTestFixtures.deniedResult(
 				state,
-				RETRY_AFTER,
+				FixedWindowTestFixtures.RETRY_AFTER,
 				RESET_AT,
-				EXPIRES_IN
+				FixedWindowTestFixtures.ONE_MINUTE
 		);
 	}
 
 	private AtomicOperationResult<FixedWindowState> atomicResult(
 			AlgorithmResult<FixedWindowState> algorithmResult) {
 
-		return new AtomicOperationResult<>(
+		return FixedWindowTestFixtures.operationResult(
 				RESET_AT,
 				algorithmResult
 		);
@@ -87,7 +71,7 @@ class RateLimitResultMapperUnitTest {
 			// Arrange
 
 			FixedWindowState state =
-					stateWith(1);
+					FixedWindowTestFixtures.stateWith(1);
 
 			int remaining = 9;
 
@@ -137,7 +121,7 @@ class RateLimitResultMapperUnitTest {
 			// Arrange
 
 			FixedWindowState state =
-					stateWith(10);
+					FixedWindowTestFixtures.stateWith(10);
 
 			AlgorithmResult<FixedWindowState> algorithmResult =
 					deniedResult(state);
@@ -167,7 +151,7 @@ class RateLimitResultMapperUnitTest {
 			);
 
 			assertEquals(
-					RETRY_AFTER,
+					FixedWindowTestFixtures.RETRY_AFTER,
 					result.getRetryAfter().get()
 			);
 

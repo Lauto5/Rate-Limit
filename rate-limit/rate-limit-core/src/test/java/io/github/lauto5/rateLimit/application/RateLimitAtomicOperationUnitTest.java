@@ -16,15 +16,16 @@ import io.github.lauto5.rateLimit.domain.algorithmState.FixedWindowState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
 import io.github.lauto5.rateLimit.domain.policies.FixedWindowPolicy;
+import io.github.lauto5.rateLimit.testdoubles.FixedWindowTestFixtures;
 import io.github.lauto5.rateLimit.testdoubles.StubRateLimitAlgorithm;
 
 class RateLimitAtomicOperationUnitTest {
 
 	private static final Instant FIXED_NOW =
-			Instant.parse("2026-01-01T10:00:00Z");
+			FixedWindowTestFixtures.FIXED_NOW;
 
 	private static final Duration WINDOW =
-			Duration.ofMinutes(1);
+			FixedWindowTestFixtures.ONE_MINUTE;
 
 	private static final int DEFAULT_LIMIT = 10;
 
@@ -52,7 +53,7 @@ class RateLimitAtomicOperationUnitTest {
 	}
 
 	private FixedWindowState state(int count) {
-		return new FixedWindowState(count, FIXED_NOW);
+		return FixedWindowTestFixtures.stateWith(count);
 	}
 
 	private StoreState<FixedWindowState> storeState(
@@ -65,7 +66,7 @@ class RateLimitAtomicOperationUnitTest {
 	private AlgorithmResult<FixedWindowState> allowedResult(
 			FixedWindowState state) {
 
-		return AlgorithmResult.allowed(
+		return FixedWindowTestFixtures.allowedResult(
 				state,
 				DEFAULT_LIMIT,
 				FIXED_NOW.plus(WINDOW),
@@ -77,7 +78,7 @@ class RateLimitAtomicOperationUnitTest {
 			FixedWindowState state,
 			Instant expiresAt) {
 
-		return AlgorithmResult.allowed(
+		return FixedWindowTestFixtures.allowedResult(
 				state,
 				DEFAULT_LIMIT,
 				expiresAt,
