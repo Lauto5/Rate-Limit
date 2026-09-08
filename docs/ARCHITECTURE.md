@@ -65,12 +65,14 @@ The core depends only on abstractions (interfaces) and never on concrete technol
                  +--------+---------------+-------+
                           |               |
               +-----------v----+   +------v------------+
-              |    Domain Core  |   |     Ports        |
-              |    (domain/)    |   |  (application/   |
-              |  Algorithms     |   |    ports/)       |
-              |  State / Policy |   |  Logger, Store,  |
-              |  Models         |   |  StateCodec, ... |
-              +-----------------+   +------+-----------+
+               |    Domain Core  |   |     Ports        |
+               |    (domain/)    |   |  (application/   |
+               |  Algorithms     |   |    ports/)       |
+               |  State / Policy |   |  AtomicOperation |
+               |  Codecs/Models  |   |  Logger          |
+               +-----------------+   |  RateLimitStore  |
+                                     |  StoreState      |
+                                     +-------------------+
                                             |
                     +-----------------------+-----------------------+
                     v                       v                       v
@@ -235,8 +237,8 @@ public interface Logger {
 
 | Implementation | Location | Behavior |
 |---|---|---|
-| `NoOpLogger` | `logging/` (core) | Discards every message. **Default** when no logger is supplied, so the library is silent out of the box |
-| `ConsoleLogger` | `logging/` (core) | Prints timestamped, leveled messages to `stdout` (`stderr` for `ERROR`). Configurable minimum level and logger name |
+| `NoOpLogger` | `application/logging/` (core) | Discards every message. **Default** when no logger is supplied, so the library is silent out of the box |
+| `ConsoleLogger` | `application/logging/` (core) | Prints timestamped, leveled messages to `stdout` (`stderr` for `ERROR`). Configurable minimum level and logger name |
 
 ### Propagation
 
@@ -442,4 +444,4 @@ To add a new storage backend:
 5. Emit store-level diagnostics through an optional `Logger` (state expiration, watch conflicts, retries).
 6. Add a `<backend>.Persistence` factory class in that module (mirroring `inmemory.Persistence` / `redis.Persistence`) so the public surface stays at a single entry point while dependencies stay minimal.
 
-The `AtomicOperation`, `StoreState`, and `StateCodec` types make the store implementation independent of any specific algorithm.
+The `AtomicOperation`, `StoreState`, and `AtomicOperationResult` types (the codec used by the operation is a `domain.algorithm.StateCodec`) make the store implementation independent of any specific algorithm.

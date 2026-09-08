@@ -138,9 +138,9 @@ The project follows **hexagonal architecture** (ports and adapters):
 | Layer | Package | Purpose |
 |---|---|---|
 | **Public API** | `api` | Factory classes (`Algorithm`, `Persistence`) |
-| **Application** | `application` | Orchestration, adapters, ports, result mapping |
-| **Domain** | `domain` | Core logic: algorithms, state, policies, models |
-| **Infrastructure** | `infrastructure` | Adapters: stores, `ConsoleLogger`, `NoOpLogger` |
+| **Application** | `application` | Orchestration, adapters, ports, result mapping, logging (`ConsoleLogger`, `NoOpLogger`) |
+| **Domain** | `domain` | Core logic: algorithms, state, policies, models, codecs |
+| **Infrastructure** | `infrastructure` | Adapters: stores (`InMemoryStore`, `RedisStore`) |
 
 When adding a new feature, place it in the correct layer. The domain layer must have **no dependencies** on infrastructure or external frameworks.
 

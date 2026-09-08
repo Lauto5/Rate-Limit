@@ -367,17 +367,17 @@ The library follows **hexagonal architecture** (ports and adapters) to keep the 
                  |  - CorruptedStateException      |
                  |  - VersionedStateCodec          |
                  |  - Ports (contracts)            |
+                 |  - Logging (Console/NoOp)       |
                  +--------+---------------+--------+
                           |               |
-              +-----------v----+   +------v------------+
-              |   Domain Core   |   |     Ports        |
-              |   (domain/)     |   |  (application/   |
-              |  Algorithms     |   |    ports/)       |
-              |  State / Policy |   |  Logger, Store   |
-              |  Models         |   |  StateCodec,     |
-              +-----------------+   |  StoreState,     |
-                                   |  Operation,...   |
-                                   +------+-----------+
+              +-----------v----+   +------v-----------------+
+              |   Domain Core   |   |      Ports (out)      |
+              |   (domain/)     |   |  AtomicOperation      |
+              |  Algorithms     |   |  AtomicOperationResult |
+              |  State / Policy |   |  Logger               |
+              |  Codecs / Model |   |  RateLimitStore       |
+              +-----------------+   |  StoreState           |
+                                    +------------------------+
                                           |
                  +------------------------+------------------------+
                  |  rate-limit-inmemory / rate-limit-redis        |
@@ -427,7 +427,7 @@ For a detailed explanation, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 |---|---|---|
 | `Algorithm` | core | `fixedWindow()`, `tokenBucket()`, `slidingWindowCounter()`, `slidingWindowLog()`, `leakyBucket()`, `gcra()` |
 | `inmemory.Persistence` | in-memory | `inMemory()`, `inMemory(logger)` |
-| `redis.Persistence` | redis | `inRedis(url)`, `inRedis(url, logger)` |
+| `redis.Persistence` | redis | `inRedis(url)`, `inRedis(url, logger)`, `inRedis(url, namespace)`, `inRedis(url, logger, namespace)` |
 | `ConsoleLogger` | core | `ConsoleLogger(clazz)`, `ConsoleLogger(clazz, level)`, `ConsoleLogger(name, level)` |
 
 <!-- TODO: Add documentation for additional algorithms and persistence options as they are implemented -->
@@ -452,22 +452,23 @@ rate-limit/
 │       │   ├── RateLimitAtomicOperation.java
 │       │   ├── RateLimitResultMapper.java
 │       │   ├── VersionedStateCodec.java
+│       │   ├── logging/                     # Logger implementations
+│       │   │   ├── ConsoleLogger.java       # Built-in console logger
+│       │   │   └── NoOpLogger.java          # Default silent logger
 │       │   └── ports/out/                   # Outbound contracts
 │       │       ├── AtomicOperation.java
 │       │       ├── AtomicOperationResult.java
 │       │       ├── Logger.java
 │       │       ├── RateLimitStore.java
-│       │       ├── StateCodec.java
 │       │       └── StoreState.java
 │       ├── domain/                          # Core domain
-│       │   ├── algorithm/                   # Algorithm interfaces & implementations
+│       │   ├── algorithm/                   # Algorithm interfaces/impls & codecs
+│       │   │   ├── StateCodec.java          # Serialization contract
+│       │   │   └── PipeDelimitedCodec.java  # Pipe-delimited codec shared by states
 │       │   ├── algorithmState/              # State value objects
 │       │   ├── context/                     # Execution context
 │       │   ├── model/                       # Decision & result models
 │       │   └── policies/                    # Policy value objects
-│       └── logging/                         # Logger implementations
-│           ├── ConsoleLogger.java           # Built-in console logger
-│           └── NoOpLogger.java              # Default silent logger
 ├── rate-limit-inmemory/
 │   └── src/main/java/io/github/lauto5/rateLimit/
 │       ├── infrastructure/InMemoryStore.java

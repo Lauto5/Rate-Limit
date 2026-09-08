@@ -1,23 +1,23 @@
-# Ejemplos de uso
+# Usage examples
 
-Proyectos externos que consumen la libreria empaquetada, validando que el usuario
-solamente necesita agregar la combinacion de dependencias que desea.
+Standalone projects that consume the packaged library, validating that a user
+only needs to add the combination of dependencies they want.
 
-## Configuración
+## Setup
 
-Ambos proyectos comparten el parent `examples/pom.xml`, que centraliza la
-configuración común (encoding, target Java 8, versión de `exec-maven-plugin` y de
-`slf4j-simple`, y las versiones de los módulos de la libreria). Las versiones reflejan
-las del parent principal `rate-limit/pom.xml`: al actualizarlas en el reactor, hay que
-mantenerlas en sincronía aquí. Para compilar los dos ejemplos a la vez:
+Both projects share the `examples/pom.xml` parent, which centralizes the common
+configuration (encoding, Java 8 target, `exec-maven-plugin` and `slf4j-simple`
+versions, and the versions of the library modules). The versions mirror those of
+the main `rate-limit/pom.xml` parent: when you update them in the reactor, keep
+them in sync here. To build both examples at once:
 
 ```bash
 mvn -f examples/pom.xml package
 ```
 
-## Prerequisito
+## Prerequisite
 
-Instalar los modulos en el repositorio local de Maven:
+Install the modules into the local Maven repository:
 
 ```bash
 mvn -f rate-limit/pom.xml install
@@ -25,8 +25,8 @@ mvn -f rate-limit/pom.xml install
 
 ## core + inmemory
 
-Dependencias: `rate-limit-core` + `rate-limit-inmemory`. La persistencia vive en
-memoria (un solo proceso, sin recursos externos).
+Dependencies: `rate-limit-core` + `rate-limit-inmemory`. Persistence lives in
+memory (single process, no external resources).
 
 ```bash
 mvn -f examples/core-inmemory compile exec:java
@@ -34,19 +34,19 @@ mvn -f examples/core-inmemory compile exec:java
 
 ## core + redis
 
-Dependencias: `rate-limit-core` + `rate-limit-redis` (+ `slf4j-simple` como
-proveedor concreto de SLF4J que requiere Lettuce). La persistencia usa un
-servidor Redis real; el estado se serializa con formato versionado y se actualiza
-atomicamente con `WATCH / MULTI / EXEC`.
+Dependencies: `rate-limit-core` + `rate-limit-redis` (+ `slf4j-simple` as the
+concrete SLF4J provider required by Lettuce). Persistence uses a real Redis
+server; state is serialized in a versioned format and updated atomically with
+`WATCH / MULTI / EXEC`.
 
-Requiere un servidor Redis accesible:
+Requires a reachable Redis server:
 
 ```bash
 docker run -d --rm --name ratelimit-example-redis -p 6379:6379 redis:7-alpine
 mvn -f examples/core-redis compile exec:java
 ```
 
-Si el servidor escucha en otro host/puerto:
+If the server listens on another host/port:
 
 ```bash
 mvn -f examples/core-redis compile exec:java -Dredis.url=redis://localhost:6390
