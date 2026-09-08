@@ -21,8 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.junit.jupiter.Container;
 
 import io.github.lauto5.rateLimit.application.RateLimitAtomicOperation;
 import io.github.lauto5.rateLimit.application.VersionedStateCodec;
@@ -32,11 +31,14 @@ import io.github.lauto5.rateLimit.domain.algorithm.FixedWindowAlgorithmImpl;
 import io.github.lauto5.rateLimit.domain.algorithmState.FixedWindowState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.policies.FixedWindowPolicy;
+import io.github.lauto5.rateLimit.testutil.RedisContainerTestSupport;
 
-@Testcontainers
-public class RedisStoreIntegrationTest {
+public class RedisStoreIntegrationTest extends RedisContainerTestSupport {
 
-	private static GenericContainer<?> redisContainer;
+	@SuppressWarnings("resource")
+	@Container
+	static final GenericContainer<?> REDIS = RedisContainerTestSupport.newRedisContainer();
+
 	private static String redisUrl;
 	private static LettuceTransactionPort keyValueStore;
 	private static RedisStore redisStore;
@@ -44,16 +46,10 @@ public class RedisStoreIntegrationTest {
 	// key = namespace + ":" + identifier (RedisStore.buildKey)
 	private static final String NS = RedisStore.DEFAULT_NAMESPACE + ":";
 
-	@SuppressWarnings("resource")
 	@BeforeAll
 	static void startRedis() {
 
-		redisContainer = new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
-				.withExposedPorts(6379);
-
-		redisContainer.start();
-
-		redisUrl = "redis://" + redisContainer.getHost() + ":" + redisContainer.getMappedPort(6379);
+		redisUrl = RedisContainerTestSupport.redisUrlOf(REDIS);
 
 		keyValueStore = new LettuceTransactionPort(redisUrl);
 		redisStore = new RedisStore(keyValueStore);
@@ -63,7 +59,6 @@ public class RedisStoreIntegrationTest {
 	@AfterAll
 	static void stopRedis() throws Exception {
 		redisStore.close();
-		redisContainer.stop();
 	}
 
 	// ==================== HELPER ====================
@@ -271,10 +266,13 @@ public class RedisStoreIntegrationTest {
 		assertTrue(!deniedResult.getAlgorithmResult().isAllowed(), "La segunda request dentro de la misma ventana debe ser denegada");
 
 		// Act - wait for the window (and the TTL in Redis) to expire
-		Thread.sleep(1_200L);
-
-		AtomicOperationResult<FixedWindowState> afterExpiryResult =
-				redisStore.executeAtomically(identifier, operationWith(algorithm, policy, Instant.now()));
+		AtomicOperationResult<FixedWindowState> afterExpiryResult = deniedResult;
+		Instant deadline = Instant.now().plusSeconds(5);
+		while (!afterExpiryResult.getAlgorithmResult().isAllowed() && Instant.now().isBefore(deadline)) {
+			Thread.sleep(100L);
+			afterExpiryResult =
+					redisStore.executeAtomically(identifier, operationWith(algorithm, policy, Instant.now()));
+		}
 
 		// Assert
 		assertTrue(afterExpiryResult.getAlgorithmResult().isAllowed(),

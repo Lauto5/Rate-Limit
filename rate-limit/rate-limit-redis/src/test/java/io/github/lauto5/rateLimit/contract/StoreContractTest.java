@@ -20,9 +20,8 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 import io.github.lauto5.rateLimit.application.RateLimitAtomicOperation;
 import io.github.lauto5.rateLimit.application.ports.out.AtomicOperationResult;
@@ -34,27 +33,21 @@ import io.github.lauto5.rateLimit.domain.policies.FixedWindowPolicy;
 import io.github.lauto5.rateLimit.infrastructure.InMemoryStore;
 import io.github.lauto5.rateLimit.infrastructure.LettuceTransactionPort;
 import io.github.lauto5.rateLimit.infrastructure.RedisStore;
+import io.github.lauto5.rateLimit.testutil.RedisContainerTestSupport;
 
-@Testcontainers
-public class StoreContractTest {
+public class StoreContractTest extends RedisContainerTestSupport {
 
-	private static GenericContainer<?> redisContainer;
 	private static LettuceTransactionPort redisPort;
 	private static RedisStore redisStore;
 
 	@SuppressWarnings("resource")
+	@Container
+	static final GenericContainer<?> REDIS = RedisContainerTestSupport.newRedisContainer();
+
 	@BeforeAll
 	static void startRedis() {
 
-		redisContainer = new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
-				.withExposedPorts(6379);
-
-		redisContainer.start();
-
-		String redisUrl =
-				"redis://" + redisContainer.getHost() + ":" + redisContainer.getMappedPort(6379);
-
-		redisPort = new LettuceTransactionPort(redisUrl);
+		redisPort = new LettuceTransactionPort(RedisContainerTestSupport.redisUrlOf(REDIS));
 		redisStore = new RedisStore(redisPort);
 
 	}
@@ -62,7 +55,6 @@ public class StoreContractTest {
 	@AfterAll
 	static void stopRedis() throws Exception {
 		redisStore.close();
-		redisContainer.stop();
 	}
 
 	/**

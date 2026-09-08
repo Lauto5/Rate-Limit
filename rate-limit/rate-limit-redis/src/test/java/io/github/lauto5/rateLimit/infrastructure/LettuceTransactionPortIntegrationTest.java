@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -27,24 +28,23 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.junit.jupiter.Container;
 
-public class LettuceTransactionPortIntegrationTest {
+import io.github.lauto5.rateLimit.testutil.RedisContainerTestSupport;
 
-	private static GenericContainer<?> redisContainer;
+public class LettuceTransactionPortIntegrationTest extends RedisContainerTestSupport {
+
+	@SuppressWarnings("resource")
+	@Container
+	static final GenericContainer<?> REDIS = RedisContainerTestSupport.newRedisContainer();
+
 	private static LettuceTransactionPort transactionPort;
 	private static LettuceTransactionPort secondPort;
 
-	@SuppressWarnings("resource")
 	@BeforeAll
 	static void startRedis() {
 
-		redisContainer = new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
-				.withExposedPorts(6379);
-
-		redisContainer.start();
-
-		String redisUrl = "redis://" + redisContainer.getHost() + ":" + redisContainer.getMappedPort(6379);
+		String redisUrl = RedisContainerTestSupport.redisUrlOf(REDIS);
 
 		transactionPort = new LettuceTransactionPort(redisUrl);
 		secondPort = new LettuceTransactionPort(redisUrl);
@@ -55,7 +55,6 @@ public class LettuceTransactionPortIntegrationTest {
 	static void stopRedis() throws Exception {
 		transactionPort.close();
 		secondPort.close();
-		redisContainer.stop();
 	}
 
 	// ==================== HELPER ====================
@@ -200,11 +199,16 @@ public class LettuceTransactionPortIntegrationTest {
 		// Assert - before it expires, the value is present
 		assertArrayEquals(bytesOf(value), transactionPort.get(key));
 
-		// Act - wait for the TTL to elapse
-		Thread.sleep(400L);
+		// Act - poll until the TTL elapses and Redis removes the key on its own
+		Instant deadline = Instant.now().plusSeconds(5);
+		byte[] valueAfterTtl = bytesOf(value);
+		while (valueAfterTtl != null && Instant.now().isBefore(deadline)) {
+			Thread.sleep(100L);
+			valueAfterTtl = transactionPort.get(key);
+		}
 
 		// Assert - Redis removed the key on its own
-		assertNull(transactionPort.get(key));
+		assertNull(valueAfterTtl);
 
 	}
 
