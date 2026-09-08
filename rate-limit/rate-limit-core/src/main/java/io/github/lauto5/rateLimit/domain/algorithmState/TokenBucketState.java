@@ -2,6 +2,12 @@ package io.github.lauto5.rateLimit.domain.algorithmState;
 
 import java.time.Instant;
 
+/**
+ * Serializable state for the token bucket algorithm.
+ *
+ * <p>Holds the current number of tokens available in the bucket and the instant at which the
+ * bucket was last refilled.
+ */
 public class TokenBucketState implements AlgorithmState {
 
 	private final double tokens;

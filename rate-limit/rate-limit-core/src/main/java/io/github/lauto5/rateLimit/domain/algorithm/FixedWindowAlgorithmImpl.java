@@ -62,8 +62,8 @@ public class FixedWindowAlgorithmImpl implements FixedWindowAlgorithm {
 		/*
 		 * 1 :
 		 * 
-		 * Si la ventana actual expiró, se crea una nueva ventana
-		 * comenzando en el instante actual.
+		 * If the current window has expired, a new window
+		 * is created starting at the current instant.
 		 */
 		
 		if (isWindowExpired(now, windowEnd)) {
@@ -92,9 +92,9 @@ public class FixedWindowAlgorithmImpl implements FixedWindowAlgorithm {
 		/*
 		 * 2 :
 		 * 
-		 * La ventana sigue vigente.
-		 * Si todavía quedan permisos disponibles,
-		 * consumimos uno.
+		 * The window is still valid.
+		 * If permits are still available,
+		 * one is consumed.
 		 */
 		
 		if (state.getCount() < policy.getLimit()) {
@@ -118,8 +118,8 @@ public class FixedWindowAlgorithmImpl implements FixedWindowAlgorithm {
 		/*
 		 * 3 :
 		 * 
-		 * No quedan permisos disponibles dentro
-		 * de la ventana actual.
+		 * No permits are available within
+		 * the current window.
 		 */
 		
 		return AlgorithmResult.denied(

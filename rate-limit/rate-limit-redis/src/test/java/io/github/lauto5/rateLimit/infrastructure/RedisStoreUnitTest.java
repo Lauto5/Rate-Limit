@@ -401,7 +401,7 @@ public class RedisStoreUnitTest {
 
 		// Assert - el loop de reintentos esta acotado: se agota la cantidad de intentos
 		// en lugar de degradar indefinidamente
-		assertTrue(thrown.getMessage().contains("25 intentos"));
+		assertTrue(thrown.getMessage().contains("after 25 attempts"));
 		assertEquals(25, port.calls.get());
 		port.close();
 

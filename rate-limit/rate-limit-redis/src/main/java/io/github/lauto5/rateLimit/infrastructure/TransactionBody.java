@@ -4,9 +4,9 @@ package io.github.lauto5.rateLimit.infrastructure;
  * Functional body of a Redis transaction: turns the current value of a key (or {@code null} if
  * absent) into the value to write and its time-to-live, plus a result for the caller.
  *
- * <p>Es invocada por {@link RedisTransactionPort#executeTransaction} entre el {@code WATCH} y
- * el {@code MULTI}/{@code EXEC}; en caso de conflicto la transaccion aborta y el llamador
- * reintenta sin re-ejecutar este cuerpo con datos obsoletos.
+ * <p>It is invoked by {@link RedisTransactionPort#executeTransaction} between the
+ * {@code WATCH} and the {@code MULTI}/{@code EXEC}; if a conflict occurs the transaction is
+ * aborted and the caller retries without re-executing this body with stale data.
  *
  * @param <T> the type of the result carried back to the caller
  */

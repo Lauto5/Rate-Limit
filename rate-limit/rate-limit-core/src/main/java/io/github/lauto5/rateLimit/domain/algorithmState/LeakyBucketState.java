@@ -1,5 +1,11 @@
 package io.github.lauto5.rateLimit.domain.algorithmState;
 
+/**
+ * Serializable state for the leaky bucket algorithm.
+ *
+ * <p>Holds the current water level of the bucket and the instant (in epoch milliseconds) of
+ * the last drain update.
+ */
 public class LeakyBucketState implements AlgorithmState {
 
 	private final double water;

@@ -18,23 +18,23 @@ import io.github.lauto5.rateLimit.logging.NoOpLogger;
 /**
  * {@link RateLimitStore} backed by a Redis key holding the serialized algorithm state.
  *
- * <p>La atomicidad se consigue con el protocolo <code>WATCH / MULTI / EXEC</code>: se observa
- * la key, se lee su estado, la {@link AtomicOperation} calcula el nuevo estado en Java, y el
- * {@link RedisTransactionPort#executeTransaction} escribe con {@code MULTI/SET/EXEC}. Si otro
- * proceso modifico la key observada, {@code EXEC} aborta y el ciclo se reintenta con el estado
- * mas reciente hasta {@link #MAX_RETRIES} intentos.
+ * <p>Atomicity is achieved with the {@link RedisTransactionPort#executeTransaction} protocol:
+ * the key is watched, its current state is read, the {@link AtomicOperation} computes the new
+ * state in Java, and {@link RedisTransactionPort#executeTransaction} persists it with
+ * {@code MULTI/SET/EXEC}. If another process modified the watched key, {@code EXEC} aborts and
+ * the cycle is retried with the most recent state up to {@link #MAX_RETRIES} attempts.
  *
- * <p><strong>Latencia en el peor caso:</strong> entre reintentos se espera un backoff
- * exponencial con jitter (0..64 ms tope). Con {@code MAX_RETRIES = 25}, una disputa continua
- * por la misma key agrega a lo sumo ~1,3 s adicionales antes de lanzar
- * {@link IllegalStateException}.
+ * <p><strong>Worst-case latency:</strong> an exponential back-off with jitter (0..64&thinsp;ms cap)
+ * is applied between retries. With {@code MAX_RETRIES = 25}, continuous contention on the same
+ * key adds at most approximately 1.3&nbsp;s of additional delay before an
+ * {@link IllegalStateException} is thrown.
  *
- * <p>El estado se serializa con {@link VersionedStateCodec}; los datos corruptos o de una
- * version incompatible se tratan como estado inexistente (con warning) en lugar de fallar.
+ * <p>State is serialized with {@link VersionedStateCodec}; corrupted or
+ * incompatible-version data is treated as absent (with a warning) rather than causing a failure.
  *
- * <p>Las keys Redis se escriben bajo un <strong>namespace</strong> ({@link
- * #DEFAULT_NAMESPACE} por defecto, configurable por constructor) para evitar colisiones entre
- * aplicaciones, ambientes, versiones o limitadores que compartan el mismo Redis.
+ * <p>Redis keys are stored under a <strong>namespace</strong> ({@link #DEFAULT_NAMESPACE} by
+ * default, configurable via constructor) to prevent collisions between applications,
+ * environments, versions, or rate limiters that share the same Redis instance.
  */
 public class RedisStore implements RateLimitStore, AutoCloseable {
 
@@ -45,7 +45,7 @@ public class RedisStore implements RateLimitStore, AutoCloseable {
 	private static final int MAX_IDENTIFIER_LENGTH = 512;
 
 	/**
-	 * Namespace por defecto para las keys Redis. Las keys se construyen como
+	 * Default namespace for Redis keys. Keys are constructed as
 	 * {@code namespace + ":" + identifier}.
 	 */
 	public static final String DEFAULT_NAMESPACE = "rate-limit";
@@ -72,7 +72,7 @@ public class RedisStore implements RateLimitStore, AutoCloseable {
 		this.logger = logger;
 
 		if (namespace == null || namespace.trim().isEmpty()) {
-			throw new IllegalArgumentException("El namespace no puede ser null o vacio");
+			throw new IllegalArgumentException("Namespace must not be null or empty");
 		}
 		this.namespace = namespace;
 	}
@@ -86,9 +86,9 @@ public class RedisStore implements RateLimitStore, AutoCloseable {
 		StateCodec<S> wireCodec = new VersionedStateCodec<>(operation.getCodec());
 
 		/*
-		 * La cantidad de reintentos queda acotada por MAX_RETRIES. El valor se valida con los
-		 * tests de concurrencia del adapter; si la contencion es tan alta que se agota, se
-		 * aborta la operacion en lugar de degradar indefinidamente.
+		 * The number of retries is bounded by MAX_RETRIES. This value is validated by the
+		 * adapter's concurrency tests; if contention is high enough to exhaust all retries, the
+		 * operation is aborted rather than degrading indefinitely.
 		 */
 
 		TransactionBody<AtomicOperationResult<S>> body = currentBytes -> {
@@ -118,11 +118,11 @@ public class RedisStore implements RateLimitStore, AutoCloseable {
 			logger.debug("WATCH/MULTI/EXEC conflict for identifier '" + identifier
 					+ "' on attempt " + (attempt + 1) + "; retrying");
 
-			/*
-			 * Backoff exponencial con jitter completo (0..2^intento, tope 64ms) para
-			 * desincronizar los reintentos bajo contencion alta: sin la espera, todos los
-			 * contendientes vuelven a mirar a la vez y pueden starvearse mutuamente (livelock).
-			 */
+		/*
+		 * Exponential back-off with full jitter (0..2^attempt, cap 64 ms) to desynchronize
+		 * retries under high contention: without the wait, all contenders look again at the
+		 * same time and may starve each other (livelock).
+		 */
 			if (attempt < MAX_RETRIES - 1) {
 				backoffBeforeRetry(attempt);
 			}
@@ -130,8 +130,8 @@ public class RedisStore implements RateLimitStore, AutoCloseable {
 		}
 
 		throw new IllegalStateException(
-				"No se pudo aplicar la operacion atomica sobre '" + identifier
-						+ "' tras " + MAX_RETRIES + " intentos (alta contencion)"
+				"Could not apply atomic operation on '" + identifier
+						+ "' after " + MAX_RETRIES + " attempts (high contention)"
 		);
 
 	}
@@ -146,17 +146,17 @@ public class RedisStore implements RateLimitStore, AutoCloseable {
 		try {
 			S decodedState = codec.decode(currentBytes);
 
-			/*
-			 * Invariante: StoreState.expiresAt es metadata de persistencia exclusivamente;
-			 * el algoritmo nunca la lee (su state porta sus propios campos temporales). En
-			 * Redis la expiracion la aplica el TTL de la key: si la key existe, el estado no
-			 * esta expirado. Por eso el placeholder Instant.EPOCH es valido aqui y la
-			 * expiracion no se evalua por reloj, sino por presencia de la key.
-			 */
+		/*
+		 * Invariant: StoreState.expiresAt is persistence metadata exclusively; the algorithm
+		 * never reads it (its state carries its own temporal fields). In Redis, expiry is
+		 * enforced by the key's TTL: if the key exists, the state is not expired. Therefore
+		 * the Instant.EPOCH placeholder is valid here, and expiry is evaluated by key
+		 * presence rather than by clock.
+		 */
 			return new StoreState<>(decodedState, Instant.EPOCH);
 		} catch (CorruptedStateException e) {
-			logger.warn("Estado corrupto o de formato incompatible para '" + identifier
-					+ "'; se reescribe desde cero: " + e.getMessage());
+			logger.warn("Corrupted or incompatible-format state for '" + identifier
+					+ "'; rewriting from scratch: " + e.getMessage());
 			return null;
 		}
 
@@ -165,11 +165,11 @@ public class RedisStore implements RateLimitStore, AutoCloseable {
 	private String buildKey(String identifier) {
 
 		if (identifier == null || identifier.isEmpty()) {
-			throw new IllegalArgumentException("El identifier no puede ser null o vacio");
+			throw new IllegalArgumentException("Identifier must not be null or empty");
 		}
 		if (identifier.length() > MAX_IDENTIFIER_LENGTH) {
-			throw new IllegalArgumentException("El identifier supera la longitud maxima permitida ("
-					+ MAX_IDENTIFIER_LENGTH + " caracteres)");
+			throw new IllegalArgumentException("Identifier exceeds the maximum allowed length ("
+					+ MAX_IDENTIFIER_LENGTH + " characters)");
 		}
 
 		return this.namespace + ":" + identifier;
@@ -195,7 +195,7 @@ public class RedisStore implements RateLimitStore, AutoCloseable {
 			Thread.sleep(sleepMillis);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
-			throw new IllegalStateException("Reintento interrumpido", e);
+			throw new IllegalStateException("Retry interrupted", e);
 		}
 	}
 

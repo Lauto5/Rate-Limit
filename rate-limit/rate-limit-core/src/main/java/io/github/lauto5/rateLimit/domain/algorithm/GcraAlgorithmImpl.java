@@ -10,6 +10,14 @@ import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
 import io.github.lauto5.rateLimit.domain.policies.GcraPolicy;
 
+/**
+ * Default implementation of {@link GcraAlgorithm}.
+ *
+ * <p>The algorithm tracks a theoretical arrival time (TAT) and permits a request whenever the
+ * current instant is no earlier than {@code TAT - burst}. Each allowed request advances the
+ * TAT by a fixed emission interval derived from the average rate. State is serialized as a
+ * UTF-8 string containing the TAT in epoch milliseconds.
+ */
 public final class GcraAlgorithmImpl implements GcraAlgorithm {
 
 	private static final StateCodec<GcraState> CODEC = new StateCodec<GcraState>() {
@@ -54,15 +62,15 @@ public final class GcraAlgorithmImpl implements GcraAlgorithm {
                 state.getTat();
 
         /*
-         * Si no existe deuda activa, el TAT efectivo
-         * comienza en el instante actual.
+         * If there is no active debt, the effective TAT
+         * begins at the current instant.
          */
         long effectiveTat =
                 Math.max(tat, nowMillis);
 
         /*
-         * Instante mínimo en el cual puede aceptarse
-         * una nueva solicitud.
+         * Earliest instant at which a new request
+         * can be accepted.
          */
         long allowAtMillis =
                 effectiveTat - toleranceMillis;

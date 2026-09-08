@@ -13,6 +13,15 @@ import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
 import io.github.lauto5.rateLimit.domain.policies.SlidingWindowCounterPolicy;
 
+/**
+ * Default implementation of {@link SlidingWindowCounterAlgorithm}.
+ *
+ * <p>The window is divided into a fixed number of sub-windows, each holding a request count.
+ * Buckets that have fully left the window are pruned, and the effective count is computed by
+ * weighting buckets that only partially overlap the current window. A request is allowed while
+ * the weighted count is below the configured limit. State is serialized as a UTF-8 string
+ * containing the count of each relevant bucket, keyed by its window bucket index.
+ */
 public class SlidingWindowCounterAlgorithmImpl
         implements SlidingWindowCounterAlgorithm {
 
@@ -72,7 +81,7 @@ public class SlidingWindowCounterAlgorithmImpl
         /*
          * 1.
          *
-         * Eliminamos los buckets completamente expirados.
+         * We remove the completely expired buckets.
          */
         Map<Long, Integer> relevantWindows =
                 pruneExpiredWindows(
@@ -84,8 +93,8 @@ public class SlidingWindowCounterAlgorithmImpl
         /*
          * 2.
          *
-         * Calculamos el conteo ponderado dentro
-         * de la ventana deslizante actual.
+         * We compute the weighted count within
+         * the current sliding window.
          */
         double weightedCount =
                 weightedCount(
@@ -97,8 +106,8 @@ public class SlidingWindowCounterAlgorithmImpl
         /*
          * 3.
          *
-         * Si hay capacidad suficiente para una nueva request,
-         * se incrementa el bucket actual.
+         * If there is enough capacity for a new request,
+         * the current bucket is incremented.
          */
         if (weightedCount < policy.getLimit()) {
 
@@ -124,16 +133,16 @@ public class SlidingWindowCounterAlgorithmImpl
                     );
 
             /*
-             * El estado debe sobrevivir al menos durante
-             * una ventana completa desde la última request.
+             * The state must survive for at least
+             * one full window since the last request.
              */
             Duration expireIn =
                     policy.getWindowSize();
 
             /*
-             * Para una Sliding Window, resetAt representa
-             * cuándo la request actual deja completamente
-             * de contribuir al límite.
+             * For a sliding window, resetAt represents
+             * when the current request stops contributing
+             * entirely to the limit.
              */
             Instant resetAt =
                     now.plus(expireIn);
@@ -149,10 +158,10 @@ public class SlidingWindowCounterAlgorithmImpl
         /*
          * 4.
          *
-         * Request denegada.
+         * Request denied.
          *
-         * Calculamos el primer instante en el que
-         * una nueva request podría volver a ser permitida.
+         * We compute the earliest instant at which
+         * a new request could be allowed again.
          */
         SlidingWindowCounterState deniedState =
                 new SlidingWindowCounterState(
@@ -170,13 +179,13 @@ public class SlidingWindowCounterAlgorithmImpl
                 now.plus(retryAfter);
 
         /*
-         * IMPORTANTE:
+         * IMPORTANT:
          *
-         * retryAfter NO representa el TTL del estado.
+         * retryAfter does NOT represent the TTL of the state.
          *
-         * Todavía pueden existir otros buckets relevantes,
-         * por lo tanto el estado debe sobrevivir durante
-         * toda la ventana.
+         * Other relevant buckets may still exist,
+         * therefore the state must survive for
+         * the whole window.
          */
         Duration expireIn =
                 policy.getWindowSize();
@@ -238,8 +247,8 @@ public class SlidingWindowCounterAlgorithmImpl
                             * subWindowMillis;
 
             /*
-             * El bucket sigue siendo relevante si alguna parte
-             * todavía se superpone con la ventana actual.
+             * The bucket remains relevant if any part of it
+             * still overlaps the current window.
              */
             if (bucketEndMillis > windowStartMillis) {
 
@@ -298,14 +307,14 @@ public class SlidingWindowCounterAlgorithmImpl
             long subWindowMillis) {
 
         /*
-         * Bucket completamente dentro de la ventana.
+         * Bucket entirely inside the window.
          */
         if (bucketStartMillis >= windowStartMillis) {
             return 1.0;
         }
 
         /*
-         * Bucket parcialmente solapado.
+         * Bucket partially overlapping the window.
          */
         long overlapMillis =
                 bucketEndMillis
@@ -366,13 +375,13 @@ public class SlidingWindowCounterAlgorithmImpl
                 nowMillis - windowMillis;
 
         /*
-         * Simulamos la evolución del inicio de la ventana.
+         * We simulate the evolution of the window start.
          *
-         * No avanzamos milisegundo por milisegundo.
+         * We do not advance millisecond by millisecond.
          *
-         * Avanzamos por segmentos definidos por los límites
-         * de los buckets, porque allí es donde cambia la
-         * composición de la ventana.
+         * We advance in segments defined by the bucket
+         * boundaries, because that is where the
+         * composition of the window changes.
          */
         long simulatedWindowStart =
                 currentWindowStart;
@@ -390,7 +399,7 @@ public class SlidingWindowCounterAlgorithmImpl
                     );
 
             /*
-             * Necesitamos que exista espacio para una nueva
+             * There must be room for a new
              * request.
              */
             if (currentCount < policy.getLimit()) {
@@ -421,11 +430,11 @@ public class SlidingWindowCounterAlgorithmImpl
                     remainingWindows.get(oldestBucket);
 
             /*
-             * El bucket más antiguo se encuentra parcialmente
-             * dentro de la ventana.
+             * The oldest bucket is partially
+             * inside the window.
              *
-             * Mientras el inicio de la ventana avanza dentro
-             * del bucket, su contribución disminuye linealmente.
+             * While the window start advances inside
+             * the bucket, its contribution decreases linearly.
              */
             double currentWeight =
                     overlapWeight(
@@ -440,11 +449,11 @@ public class SlidingWindowCounterAlgorithmImpl
                             * currentWeight;
 
             /*
-             * Necesitamos reducir el conteo hasta:
+             * We need to reduce the count until:
              *
              * count < limit
              *
-             * Como el siguiente request agrega 1, necesitamos:
+             * Since the next request adds 1, we need:
              *
              * count <= limit - 1
              */
@@ -453,8 +462,8 @@ public class SlidingWindowCounterAlgorithmImpl
                             - (policy.getLimit() - 1);
 
             /*
-             * El bucket más antiguo desaparece a una velocidad
-             * lineal de:
+             * The oldest bucket disappears at a linear
+             * rate of:
              *
              * oldestCount / subWindowMillis
              */
@@ -475,9 +484,9 @@ public class SlidingWindowCounterAlgorithmImpl
                                 - simulatedWindowStart;
 
                 /*
-                 * Si podemos bajar del límite antes de que
-                 * expire completamente el bucket, encontramos
-                 * directamente el retryAfter.
+                 * If we can drop below the limit before the
+                 * bucket fully expires, we find
+                 * the retryAfter directly.
                  */
                 if (millisNeeded
                         < millisUntilBucketExpires) {
@@ -494,11 +503,11 @@ public class SlidingWindowCounterAlgorithmImpl
             }
 
             /*
-             * No fue suficiente con la disminución del bucket
-             * actual.
+             * The decrease of the current bucket
+             * was not enough.
              *
-             * Avanzamos hasta que expire completamente y
-             * continuamos con el siguiente bucket.
+             * We advance until it fully expires and
+             * continue with the next bucket.
              */
             simulatedWindowStart =
                     oldestBucketEnd;
@@ -509,8 +518,8 @@ public class SlidingWindowCounterAlgorithmImpl
         }
 
         /*
-         * Si todos los buckets desaparecieron,
-         * la próxima request será permitida.
+         * If all buckets have disappeared,
+         * the next request will be allowed.
          */
         long elapsedMillis =
                 simulatedWindowStart

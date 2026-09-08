@@ -4,9 +4,8 @@ package io.github.lauto5.rateLimit.application;
  * Indicates that persisted state could not be decoded because the data is corrupted,
  * truncated or encoded in an incompatible format.
  *
- * <p>Los adapters de persistencia deben capturar esta excepcion y decidir como reaccionar
- * (por ejemplo, tratar el estado como inexistente y resetearlo) en lugar de fallar con datos
- * ambiguos.
+ * <p>Persistence adapters must catch this exception and decide how to react (e.g., treat the
+ * state as non-existent and reset it) rather than failing with ambiguous data.
  */
 public class CorruptedStateException extends RuntimeException {
 

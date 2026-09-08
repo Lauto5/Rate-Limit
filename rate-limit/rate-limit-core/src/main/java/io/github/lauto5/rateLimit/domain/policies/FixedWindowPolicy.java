@@ -2,6 +2,12 @@ package io.github.lauto5.rateLimit.domain.policies;
 
 import java.time.Duration;
 
+/**
+ * Configuration for the fixed window algorithm.
+ *
+ * <p>Defines the maximum number of requests ({@code limit}) permitted within a single window
+ * of the given {@code windowSize}.
+ */
 public final class FixedWindowPolicy implements RateLimitPolicy {
 
 	private final int limit;

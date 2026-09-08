@@ -5,6 +5,14 @@ import java.time.format.DateTimeFormatter;
 
 import io.github.lauto5.rateLimit.application.ports.out.Logger;
 
+/**
+ * {@link Logger} implementation that writes formatted log messages to {@code System.out} or
+ * {@code System.err} depending on the severity level. Messages whose level is below the
+ * configured minimum level are silently discarded.
+ *
+ * <p>Each output line follows the format:
+ * {@code [timestamp] [LEVEL] [thread] (name): message}.
+ */
 public class ConsoleLogger implements Logger {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
@@ -28,7 +36,7 @@ public class ConsoleLogger implements Logger {
     @Override
     public void log(Level level, String message) {
         if (level.ordinal() < minLevel.ordinal()) {
-            return; // Ignorar logs por debajo del nivel configurado
+            return; // Discard logs below the configured minimum level
         }
 
         String timestamp = LocalDateTime.now().format(FORMATTER);

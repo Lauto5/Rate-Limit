@@ -8,28 +8,28 @@ import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
 /**
  * Decorator that prefixes state serialization with a format marker for versioning.
  *
- * <p>El payload serializado tiene esta forma:
+ * <p>The serialized payload has the following structure:
  *
  * <pre>
- * [0x52][0x4C][0x01][... payload del codec delegado ...]
+ * [0x52][0x4C][0x01][... delegated codec payload ...]
  *   ^      ^      ^
  *   'R'    'L'   version (1)
  * </pre>
  *
- * Al decodificar se valida el marcador; ante datos truncados, corruptos o de una version no
- * soportada se lanza {@link CorruptedStateException} en lugar de intentar interpretar datos
- * ambiguos.
+ * During decoding, the marker is validated. If the data is truncated, corrupted, or encoded
+ * in an unsupported version, {@link CorruptedStateException} is thrown instead of attempting
+ * to interpret ambiguous data.
  *
- * <p><b>Politica de versionado:</b> actualmente existe una unica version (0x01) y no hay
- * migraciones. La frontera de versionado queda definida asi:
+ * <p><b>Versioning policy:</b> currently only one version exists (0x01) and no migrations are
+ * supported. The versioning boundary is defined as follows:
  *
  * <ul>
- *   <li>una version desconocida produce {@link CorruptedStateException} (nunca se interpretan
- *       bytes ambiguos);</li>
- *   <li>el store Redis trata ese estado como inexistente (politica <em>fail-open</em>) y lo
- *       reescribe;</li>
- *   <li>un rolling deployment con formatos distintos solo es posible introduciendo una nueva
- *       version y conservando lectores para las anteriores.</li>
+ *   <li>an unknown version produces {@link CorruptedStateException} (ambiguous bytes are never
+ *       interpreted);</li>
+ *   <li>the Redis store treats the state as non-existent (<em>fail-open</em> policy) and
+ *       rewrites it;</li>
+ *   <li>a rolling deployment with different formats is only possible by introducing a new
+ *       version while retaining readers for previous versions.</li>
  * </ul>
  *
  * @param <S> the concrete algorithm state type
@@ -65,15 +65,15 @@ public final class VersionedStateCodec<S extends AlgorithmState> implements Stat
 	@Override
 	public S decode(byte[] data) {
 		if (data == null || data.length < HEADER_LENGTH) {
-			throw new CorruptedStateException("Estado truncado o inexistente");
+			throw new CorruptedStateException("Truncated or missing state");
 		}
 		if (data[0] != MAGIC[0] || data[1] != MAGIC[1]) {
 			throw new CorruptedStateException(
-					"Marcador de formato invalido: " + describeBytes(data));
+					"Invalid format marker: " + describeBytes(data));
 		}
 		if (data[2] != CURRENT_VERSION) {
 			throw new CorruptedStateException(
-					"Version de formato no soportada: " + (data[2] & 0xFF));
+					"Unsupported format version: " + (data[2] & 0xFF));
 		}
 
 		byte[] payload = Arrays.copyOfRange(data, HEADER_LENGTH, data.length);
@@ -82,13 +82,14 @@ public final class VersionedStateCodec<S extends AlgorithmState> implements Stat
 			return delegate.decode(payload);
 		} catch (RuntimeException e) {
 			/*
-			 * El header es valido pero el codec concreto no pudo interpretar el payload
-			 * (por ejemplo, un NumberFormatException del codec de FixedWindow). Se normaliza
-			 * a CorruptedStateException para que el store aplique su politica fail-open:
-			 * tratar el estado como inexistente y reescribirlo, en lugar de fallar la request.
+			 * The header is valid but the concrete codec could not interpret the payload
+			 * (e.g., a NumberFormatException from the FixedWindow codec). The failure is
+			 * normalized to CorruptedStateException so that the store applies its fail-open
+			 * policy: treat the state as non-existent and rewrite it rather than failing
+			 * the request.
 			 */
 			throw new CorruptedStateException(
-					"Payload de estado ilegible: " + e.getMessage(), e);
+					"Unreadable state payload: " + e.getMessage(), e);
 		}
 	}
 

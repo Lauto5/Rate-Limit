@@ -1,5 +1,10 @@
 package io.github.lauto5.rateLimit.domain.model;
 
+/**
+ * A decision indicating that a request was allowed.
+ *
+ * <p>Holds the number of remaining requests that can still be made within the current limit.
+ */
 public final class AllowedDecision implements AlgorithmDecision {
 
     private final int remaining;

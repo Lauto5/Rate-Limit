@@ -10,6 +10,14 @@ import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
 import io.github.lauto5.rateLimit.domain.policies.LeakyBucketPolicy;
 
+/**
+ * Default implementation of {@link LeakyBucketAlgorithm}.
+ *
+ * <p>Water is added to the bucket with each request and drains continuously at the configured
+ * leak rate. A request is allowed whenever adding it does not overflow the bucket capacity.
+ * State is serialized as a UTF-8 string containing the current water level and the timestamp
+ * of the last leak in epoch milliseconds.
+ */
 public class LeakyBucketAlgorithmImpl implements LeakyBucketAlgorithm {
 
 	private static final StateCodec<LeakyBucketState> CODEC = new StateCodec<LeakyBucketState>() {
@@ -53,9 +61,9 @@ public class LeakyBucketAlgorithmImpl implements LeakyBucketAlgorithm {
 		/*
 		 * 1 :
 		 *
-		 * Calculamos cuánta agua se filtró (leak) desde la
-		 * última actualización, en base al tiempo transcurrido
-		 * y a la tasa de drenaje de la política.
+		 * We compute how much water leaked since
+		 * the last update, based on the elapsed time
+		 * and the drain rate of the policy.
 		 */
 
 		long elapsedMillis = nowMillis - state.getLastLeak();
@@ -69,8 +77,8 @@ public class LeakyBucketAlgorithmImpl implements LeakyBucketAlgorithm {
 		/*
 		 * 2 :
 		 *
-		 * Si agregar esta solicitud no desborda la capacidad
-		 * del balde, se permite y se acumula el agua.
+		 * If adding this request does not overflow the bucket
+		 * capacity, it is allowed and the water is accumulated.
 		 */
 
 		if (currentWater + REQUEST_COST <= policy.getCapacity()) {
@@ -97,9 +105,8 @@ public class LeakyBucketAlgorithmImpl implements LeakyBucketAlgorithm {
 		/*
 		 * 3 :
 		 *
-		 * El balde desborda. Se informa cuánto falta
-		 * para que drene lo suficiente como para
-		 * aceptar una nueva solicitud.
+		 * The bucket overflows. It reports how long it will take
+		 * to drain enough water to accept a new request.
 		 */
 
 		LeakyBucketState deniedState = new LeakyBucketState(currentWater, nowMillis);

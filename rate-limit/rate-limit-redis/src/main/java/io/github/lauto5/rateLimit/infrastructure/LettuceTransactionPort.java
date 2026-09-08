@@ -20,14 +20,14 @@ import io.github.lauto5.rateLimit.logging.NoOpLogger;
 /**
  * {@link RedisTransactionPort} implementation backed by Lettuce.
  *
- * <p>Cada transaccion usa una conexion dedicada del pool porque {@code WATCH/MULTI/EXEC} no
- * puede intercalarse entre threads sobre una misma conexion. Si la key cambia entre el
- * {@code WATCH} y el {@code EXEC}, Redis aborta la transaccion y {@link
- * #executeTransaction} devuelve {@code null} para que el {@link RedisStore} reintente.
+ * <p>Each transaction uses a dedicated connection from the pool because
+ * {@code WATCH/MULTI/EXEC} cannot be interleaved across threads on the same connection. If the
+ * key changes between the {@code WATCH} and the {@code EXEC}, Redis aborts the transaction and
+ * {@link #executeTransaction} returns {@code null} so that {@link RedisStore} can retry.
  *
- * <p>Si algo falla (body, red, protocolo), la conexion se limpia con <code>DISCARD</code>/
- * <code>UNWATCH</code> (best-effort) antes de devolverla al pool, de modo que nunca se
- * reutilice una conexion con {@code WATCH}/{@code MULTI} residuales.
+ * <p>If anything fails (body, network, protocol), the connection is cleaned up with
+ * <code>DISCARD</code>/<code>UNWATCH</code> (best-effort) before it is returned to the pool,
+ * ensuring that a connection with residual {@code WATCH}/{@code MULTI} state is never reused.
  */
 public class LettuceTransactionPort implements RedisTransactionPort {
 
@@ -109,19 +109,19 @@ public class LettuceTransactionPort implements RedisTransactionPort {
 
 		} catch (Exception e) {
 			/*
-			 * Si el WATCH quedo activo o el MULTI quedo abierto, se limpia el estado de la
-			 * conexion (best-effort) ANTES de devolverla al pool: una conexion con WATCH/MULTI
-			 * residuales no debe reutilizarse por otro hilo. El conflicto (EXEC abortado) NO
-			 * llega aqui: se devuelve null y el RedisStore reintenta.
+			 * If WATCH is still active or MULTI is still open, clean up the connection state
+			 * (best-effort) BEFORE returning it to the pool: a connection with residual
+			 * WATCH/MULTI state must not be reused by another thread. A conflict (aborted
+			 * EXEC) does NOT reach here: null is returned and RedisStore retries.
 			 */
 			cleanupTransactionState(sync, watched, inTransaction);
-			throw new IllegalStateException("Fallo la transaccion Redis sobre '" + key + "'", e);
+			throw new IllegalStateException("Redis transaction failed for '" + key + "'", e);
 		} finally {
 			if (connection != null) {
 				try {
 					pool.returnObject(connection);
 				} catch (Exception e) {
-					logger.warn("No se pudo devolver la conexion al pool: " + e.getMessage());
+					logger.warn("Could not return connection to the pool: " + e.getMessage());
 					connection.close();
 				}
 			}
@@ -137,13 +137,13 @@ public class LettuceTransactionPort implements RedisTransactionPort {
 
 		try {
 			if (inTransaction) {
-				// DISCARD cierra el MULTI y limpia el WATCH de la conexion
+				// DISCARD closes the MULTI and clears the WATCH on the connection
 				sync.discard();
 			} else if (watched) {
 				sync.unwatch();
 			}
 		} catch (Exception e) {
-			logger.warn("No se pudo limpiar el estado de la transaccion: " + e.getMessage());
+			logger.warn("Could not clean up transaction state: " + e.getMessage());
 		}
 	}
 
@@ -158,13 +158,13 @@ public class LettuceTransactionPort implements RedisTransactionPort {
 			logger.debug("GET '" + key + "' -> " + (value == null ? "<absent>" : value.length + " bytes"));
 			return value;
 		} catch (Exception e) {
-			throw new IllegalStateException("Fallo el GET de '" + key + "'", e);
+			throw new IllegalStateException("GET failed for '" + key + "'", e);
 		} finally {
 			if (connection != null) {
 				try {
 					pool.returnObject(connection);
 				} catch (Exception e) {
-					logger.warn("No se pudo devolver la conexion al pool: " + e.getMessage());
+					logger.warn("Could not return connection to the pool: " + e.getMessage());
 					connection.close();
 				}
 			}

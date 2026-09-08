@@ -3,20 +3,20 @@ package io.github.lauto5.rateLimit.infrastructure;
 /**
  * Low-level port for a Redis key-value transaction bounded to a single key.
  *
- * <p>El {@link RedisTransactionPort#executeTransaction} ejecuta en una unica conexion y de
- * forma atomica la siguiente secuencia:
+ * <p>{@link RedisTransactionPort#executeTransaction} executes the following sequence atomically
+ * on a single connection:
  *
  * <pre>
  * WATCH key
  * GET key
- * (el {@link TransactionBody} calcula el nuevo estado y TTL)
+ * ({@link TransactionBody} computes the new state and TTL)
  * MULTI; SET key value PX ttl; EXEC
  * </pre>
  *
- * Si el {@code EXEC} fue abortado (otro proceso modifico la key observada), el metodo devuelve
- * {@code null} y el llamador debe reintentar con el estado mas reciente.
+ * If {@code EXEC} was aborted (another process modified the watched key), the method returns
+ * {@code null} and the caller must retry with the most recent state.
  *
- * <p>Este port extiende {@link AutoCloseable} para liberar los recursos subyacentes.
+ * <p>This port extends {@link AutoCloseable} to release underlying resources.
  */
 public interface RedisTransactionPort extends AutoCloseable {
 

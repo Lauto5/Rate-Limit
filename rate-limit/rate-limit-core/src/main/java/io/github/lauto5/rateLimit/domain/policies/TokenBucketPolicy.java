@@ -1,5 +1,11 @@
 package io.github.lauto5.rateLimit.domain.policies;
 
+/**
+ * Configuration for the token bucket algorithm.
+ *
+ * <p>Defines the maximum {@code capacity} of the bucket and the {@code refillRate} at which
+ * tokens are added per unit of time.
+ */
 public final class TokenBucketPolicy implements RateLimitPolicy {
 
 	private final double capacity;

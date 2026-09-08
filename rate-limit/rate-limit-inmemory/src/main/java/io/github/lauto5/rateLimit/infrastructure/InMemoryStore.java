@@ -11,6 +11,14 @@ import io.github.lauto5.rateLimit.application.ports.out.RateLimitStore;
 import io.github.lauto5.rateLimit.application.ports.out.StoreState;
 import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
 
+/**
+ * Thread-safe in-memory implementation of {@link RateLimitStore}, keyed by identifier.
+ *
+ * <p>Each entry is stored in a {@link ConcurrentHashMap} and its expiry is evaluated on read:
+ * if the stored state has expired, it is treated as absent before the {@link AtomicOperation}
+ * is applied. State is lost when the JVM terminates, making this implementation suitable for
+ * single-process deployments or testing only.
+ */
 public class InMemoryStore implements RateLimitStore {
 
 	private ConcurrentHashMap<String, StoreState<?>> store = new ConcurrentHashMap<String, StoreState<?>>();

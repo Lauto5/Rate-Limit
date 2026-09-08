@@ -13,6 +13,14 @@ import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
 import io.github.lauto5.rateLimit.domain.policies.SlidingWindowLogPolicy;
 
+/**
+ * Default implementation of {@link SlidingWindowLogAlgorithm}.
+ *
+ * <p>Timestamps that fall outside the current sliding window are discarded. A request is
+ * allowed whenever the number of remaining timestamps is below the configured limit, and the
+ * timestamp of the request is then recorded. State is serialized as a UTF-8 string containing
+ * the list of request timestamps in epoch milliseconds.
+ */
 public class SlidingWindowLogAlgorithmImpl implements SlidingWindowLogAlgorithm {
 
 	private static final StateCodec<SlidingWindowLogState> CODEC = new StateCodec<SlidingWindowLogState>() {
@@ -63,8 +71,8 @@ public class SlidingWindowLogAlgorithmImpl implements SlidingWindowLogAlgorithm 
 		/*
 		 * 1 :
 		 *
-		 * Se descartan los timestamps que ya quedaron
-		 * fuera de la ventana deslizante actual.
+		 * The timestamps that already fell out of
+		 * the current sliding window are discarded.
 		 */
 
 		List<Long> relevantTimestamps = pruneExpiredTimestamps(state.getTimestamps(), windowStartMillis);
@@ -72,8 +80,8 @@ public class SlidingWindowLogAlgorithmImpl implements SlidingWindowLogAlgorithm 
 		/*
 		 * 2 :
 		 *
-		 * Si la cantidad de timestamps vigentes no alcanzó
-		 * el límite, se registra la solicitud actual.
+		 * If the number of valid timestamps has not reached
+		 * the limit, the current request is recorded.
 		 */
 
 		if (relevantTimestamps.size() < policy.getLimit()) {
@@ -102,9 +110,9 @@ public class SlidingWindowLogAlgorithmImpl implements SlidingWindowLogAlgorithm 
 		/*
 		 * 3 :
 		 *
-		 * Se alcanzó el límite dentro de la ventana.
-		 * Se calcula el instante exacto en el que el timestamp
-		 * más antiguo dejará de contar dentro de la ventana.
+		 * The limit was reached within the window.
+		 * The exact instant at which the oldest timestamp
+		 * will stop counting within the window is computed.
 		 */
 
 		SlidingWindowLogState deniedState = new SlidingWindowLogState(relevantTimestamps);

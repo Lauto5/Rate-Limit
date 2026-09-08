@@ -1,5 +1,15 @@
 package io.github.lauto5.rateLimit.application.ports.out;
 
+/**
+ * Abstraction for structured logging within the rate-limit subsystem.
+ *
+ * <p>Implementations route log messages to a specific destination (console, file, remote
+ * service, etc.). Each message is tagged with a {@link Level} that indicates its severity.
+ *
+ * <p>The interface exposes a general {@link #log(Level, String)} method as well as
+ * convenience methods ({@link #debug}, {@link #info}, {@link #warn}, {@link #error}) that
+ * delegate to {@code log} with the appropriate level.
+ */
 public interface Logger {
     
     enum Level {

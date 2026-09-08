@@ -1,5 +1,11 @@
 package io.github.lauto5.rateLimit.domain.policies;
 
+/**
+ * Configuration for the leaky bucket algorithm.
+ *
+ * <p>Defines the maximum {@code capacity} of the bucket and the {@code leakRate} at which
+ * water drains per unit of time.
+ */
 public final class LeakyBucketPolicy implements RateLimitPolicy {
 
 	private final double capacity;

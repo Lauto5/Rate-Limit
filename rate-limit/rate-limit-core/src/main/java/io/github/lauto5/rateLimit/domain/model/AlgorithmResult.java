@@ -6,6 +6,14 @@ import java.util.Optional;
 
 import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
 
+/**
+ * Result produced by the execution of a rate-limiting algorithm.
+ *
+ * <p>Contains the updated state, the decision for the request, the instant at which the
+ * limit resets, and the time-to-live of the state.
+ *
+ * @param <S> the concrete state type
+ */
 public final class AlgorithmResult <S extends AlgorithmState>{
 	
 	private final S state;

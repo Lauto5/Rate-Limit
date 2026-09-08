@@ -8,8 +8,8 @@ import io.github.lauto5.rateLimit.logging.NoOpLogger;
 /**
  * Static factory for the in-memory {@link RateLimitStore} implementation.
  *
- * <p>Esta clase pertenece al modulo {@code rate-limit-inmemory}. Se agrega esta dependencia
- * (ademas de {@code rate-limit-core}) para usar almacenamiento en memoria.
+ * <p>This class belongs to the {@code rate-limit-inmemory} module. This dependency (in addition
+ * to {@code rate-limit-core}) is required to use in-memory storage.
  *
  * <p>This class is not intended to be instantiated.
  */

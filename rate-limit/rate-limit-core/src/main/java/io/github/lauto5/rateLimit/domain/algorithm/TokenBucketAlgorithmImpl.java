@@ -60,9 +60,9 @@ public class TokenBucketAlgorithmImpl implements TokenBucketAlgorithm {
 		/*
 		 * 1 :
 		 *
-		 * Calculamos cuántos tokens se generaron desde el
-		 * último refill, en base al tiempo transcurrido
-		 * y a la tasa de recarga de la política.
+		 * We compute how many tokens were generated since
+		 * the last refill, based on the elapsed time
+		 * and the refill rate of the policy.
 		 */
 
 		Duration elapsed = Duration.between(state.getLastRefill(), now);
@@ -79,8 +79,8 @@ public class TokenBucketAlgorithmImpl implements TokenBucketAlgorithm {
 		/*
 		 * 2 :
 		 *
-		 * Si hay al menos un token disponible,
-		 * se consume uno y se permite la solicitud.
+		 * If at least one token is available,
+		 * one is consumed and the request is allowed.
 		 */
 
 		if (availableTokens >= TOKEN_COST) {
@@ -110,9 +110,9 @@ public class TokenBucketAlgorithmImpl implements TokenBucketAlgorithm {
 		/*
 		 * 3 :
 		 *
-		 * No hay tokens disponibles.
-		 * Se informa cuánto falta para que se
-		 * genere el próximo token.
+		 * No tokens are available.
+		 * It reports how long until
+		 * the next token is generated.
 		 */
 
 		TokenBucketState deniedState = new TokenBucketState(
