@@ -22,7 +22,7 @@ import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
 import io.github.lauto5.rateLimit.domain.model.AllowedDecision;
 import io.github.lauto5.rateLimit.domain.model.DeniedDecision;
 import io.github.lauto5.rateLimit.domain.policies.SlidingWindowLogPolicy;
-import io.github.lauto5.rateLimit.testdoubles.FixedWindowTestFixtures;
+import io.github.lauto5.rateLimit.testdoubles.TestTime;
 
 public class SlidingWindowLogAlgorithmImplUnitTest {
 
@@ -34,7 +34,7 @@ public class SlidingWindowLogAlgorithmImplUnitTest {
 	void setUp() {
 		algorithm = new SlidingWindowLogAlgorithmImpl();
 		standardPolicy = new SlidingWindowLogPolicy(5, Duration.ofMinutes(1));
-		fixedNow = FixedWindowTestFixtures.FIXED_NOW;
+		fixedNow = TestTime.FIXED_NOW;
 	}
 
 	// ==================== HELPER ====================

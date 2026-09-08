@@ -20,7 +20,7 @@ import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
 import io.github.lauto5.rateLimit.domain.model.AllowedDecision;
 import io.github.lauto5.rateLimit.domain.model.DeniedDecision;
 import io.github.lauto5.rateLimit.domain.policies.GcraPolicy;
-import io.github.lauto5.rateLimit.testdoubles.FixedWindowTestFixtures;
+import io.github.lauto5.rateLimit.testdoubles.TestTime;
 
 public class GcraAlgorithmImplUnitTest {
 
@@ -32,7 +32,7 @@ public class GcraAlgorithmImplUnitTest {
 	void setUp() {
 		algorithm = new GcraAlgorithmImpl();
 		standardPolicy = new GcraPolicy(1.0, Duration.ofSeconds(5)); // 1 req/sec, 5s burst
-		fixedNow = FixedWindowTestFixtures.FIXED_NOW;
+		fixedNow = TestTime.FIXED_NOW;
 	}
 
 	// ==================== HELPER ====================

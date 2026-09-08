@@ -18,11 +18,12 @@ import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
 import io.github.lauto5.rateLimit.domain.policies.FixedWindowPolicy;
 import io.github.lauto5.rateLimit.testdoubles.FixedWindowTestFixtures;
 import io.github.lauto5.rateLimit.testdoubles.StubRateLimitAlgorithm;
+import io.github.lauto5.rateLimit.testdoubles.TestTime;
 
 class RateLimitAtomicOperationUnitTest {
 
 	private static final Instant FIXED_NOW =
-			FixedWindowTestFixtures.FIXED_NOW;
+			TestTime.FIXED_NOW;
 
 	private static final Duration WINDOW =
 			FixedWindowTestFixtures.ONE_MINUTE;

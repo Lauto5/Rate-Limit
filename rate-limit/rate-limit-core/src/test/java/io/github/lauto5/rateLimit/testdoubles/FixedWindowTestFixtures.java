@@ -15,9 +15,6 @@ import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
  */
 public final class FixedWindowTestFixtures {
 
-	public static final Instant FIXED_NOW =
-			Instant.parse("2026-01-01T10:00:00Z");
-
 	public static final Duration ONE_MINUTE =
 			Duration.ofMinutes(1);
 
@@ -28,7 +25,7 @@ public final class FixedWindowTestFixtures {
 	}
 
 	public static FixedWindowState stateWith(int count) {
-		return new FixedWindowState(count, FIXED_NOW);
+		return new FixedWindowState(count, TestTime.FIXED_NOW);
 	}
 
 	public static FixedWindowState stateWith(int count, Instant windowStart) {

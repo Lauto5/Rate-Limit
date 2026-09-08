@@ -24,11 +24,12 @@ import io.github.lauto5.rateLimit.domain.policies.FixedWindowPolicy;
 import io.github.lauto5.rateLimit.testdoubles.FakeRateLimitStore;
 import io.github.lauto5.rateLimit.testdoubles.FixedWindowTestFixtures;
 import io.github.lauto5.rateLimit.testdoubles.StubRateLimitAlgorithm;
+import io.github.lauto5.rateLimit.testdoubles.TestTime;
 
 class RateLimitServiceUnitTest {
 
 	private static final Instant FIXED_NOW =
-			FixedWindowTestFixtures.FIXED_NOW;
+			TestTime.FIXED_NOW;
 
 	private static final Duration ONE_MINUTE =
 			FixedWindowTestFixtures.ONE_MINUTE;

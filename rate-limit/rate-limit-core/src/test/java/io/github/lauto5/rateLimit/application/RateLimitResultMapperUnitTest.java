@@ -16,11 +16,12 @@ import io.github.lauto5.rateLimit.application.ports.out.AtomicOperationResult;
 import io.github.lauto5.rateLimit.domain.algorithmState.FixedWindowState;
 import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
 import io.github.lauto5.rateLimit.testdoubles.FixedWindowTestFixtures;
+import io.github.lauto5.rateLimit.testdoubles.TestTime;
 
 class RateLimitResultMapperUnitTest {
 
 	private static final Instant RESET_AT =
-			FixedWindowTestFixtures.FIXED_NOW.plus(FixedWindowTestFixtures.ONE_MINUTE);
+			TestTime.FIXED_NOW.plus(FixedWindowTestFixtures.ONE_MINUTE);
 
 	// ============================================================
 	// HELPERS

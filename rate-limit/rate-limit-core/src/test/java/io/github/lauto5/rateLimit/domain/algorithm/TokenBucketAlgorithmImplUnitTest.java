@@ -19,7 +19,7 @@ import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
 import io.github.lauto5.rateLimit.domain.model.AllowedDecision;
 import io.github.lauto5.rateLimit.domain.model.DeniedDecision;
 import io.github.lauto5.rateLimit.domain.policies.TokenBucketPolicy;
-import io.github.lauto5.rateLimit.testdoubles.FixedWindowTestFixtures;
+import io.github.lauto5.rateLimit.testdoubles.TestTime;
 
 public class TokenBucketAlgorithmImplUnitTest {
 
@@ -31,7 +31,7 @@ public class TokenBucketAlgorithmImplUnitTest {
 	void setUp() {
 		algorithm = new TokenBucketAlgorithmImpl();
 		standardPolicy = new TokenBucketPolicy(5.0, 1.0); // 5 tokens, 1 token/sec
-		fixedNow = FixedWindowTestFixtures.FIXED_NOW;
+		fixedNow = TestTime.FIXED_NOW;
 	}
 
 	// ==================== HELPER ====================

@@ -19,7 +19,7 @@ import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
 import io.github.lauto5.rateLimit.domain.model.AllowedDecision;
 import io.github.lauto5.rateLimit.domain.model.DeniedDecision;
 import io.github.lauto5.rateLimit.domain.policies.LeakyBucketPolicy;
-import io.github.lauto5.rateLimit.testdoubles.FixedWindowTestFixtures;
+import io.github.lauto5.rateLimit.testdoubles.TestTime;
 
 public class LeakyBucketAlgorithmImplUnitTest {
 
@@ -31,7 +31,7 @@ public class LeakyBucketAlgorithmImplUnitTest {
 	void setUp() {
 		algorithm = new LeakyBucketAlgorithmImpl();
 		standardPolicy = new LeakyBucketPolicy(5.0, 1.0); // capacity 5, drains 1/sec
-		fixedNow = FixedWindowTestFixtures.FIXED_NOW;
+		fixedNow = TestTime.FIXED_NOW;
 	}
 
 	// ==================== HELPER ====================
