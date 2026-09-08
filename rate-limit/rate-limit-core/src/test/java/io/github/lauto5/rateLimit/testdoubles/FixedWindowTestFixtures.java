@@ -10,8 +10,9 @@ import io.github.lauto5.rateLimit.domain.model.AlgorithmResult;
 /**
  * Shared {@code FixedWindow} fixtures for the core module tests.
  *
- * <p>Centralizes the fixed timestamp and the state/result builders that were duplicated
- * across the application tests, so the tested values stay consistent from a single place.
+ * <p>Centralizes the state/result builders that were duplicated across the application
+ * tests, so the tested values stay consistent from a single place. The shared fixed
+ * timestamp lives in {@link TestTime}.
  */
 public final class FixedWindowTestFixtures {
 
