@@ -41,6 +41,9 @@ public class RedisStoreIntegrationTest {
 	private static LettuceTransactionPort keyValueStore;
 	private static RedisStore redisStore;
 
+	// key = namespace + ":" + identifier (RedisStore.buildKey)
+	private static final String NS = RedisStore.DEFAULT_NAMESPACE + ":";
+
 	@SuppressWarnings("resource")
 	@BeforeAll
 	static void startRedis() {
@@ -98,7 +101,7 @@ public class RedisStoreIntegrationTest {
 		assertTrue(result.getAlgorithmResult().isAllowed());
 
 		// Verificamos que realmente quedo en Redis, no solo en el resultado en memoria
-		byte[] rawStored = keyValueStore.get(identifier);
+		byte[] rawStored = keyValueStore.get(NS + identifier);
 		FixedWindowState decoded = wireCodec(algorithm.getCodec()).decode(rawStored);
 
 		assertEquals(1, decoded.getCount());
@@ -285,7 +288,7 @@ public class RedisStoreIntegrationTest {
 		// Arrange - pre-cargamos un valor que no sigue el formato versionado
 		String identifier = uniqueIdentifier();
 		byte[] garbage = "legacy-raw-state".getBytes(java.nio.charset.StandardCharsets.UTF_8);
-		keyValueStore.executeTransaction(identifier,
+		keyValueStore.executeTransaction(NS + identifier,
 				current -> new TransactionWrite<>(garbage, 60_000L, null));
 
 		FixedWindowAlgorithmImpl algorithm = new FixedWindowAlgorithmImpl();
@@ -297,7 +300,7 @@ public class RedisStoreIntegrationTest {
 
 		// Assert - el estado se reescribio en formato versionado valido
 		assertTrue(result.getAlgorithmResult().isAllowed());
-		FixedWindowState decoded = wireCodec(algorithm.getCodec()).decode(keyValueStore.get(identifier));
+		FixedWindowState decoded = wireCodec(algorithm.getCodec()).decode(keyValueStore.get(NS + identifier));
 		assertEquals(1, decoded.getCount());
 
 	}

@@ -10,6 +10,13 @@ import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
  * current algorithm state {@code T} together with an {@link Instant} at which that state
  * should be considered expired.
  *
+ * <p><b>Invariant:</b> {@code expiresAt} is <em>persistence metadata</em> only. Algorithms
+ * never read it back: the {@link AlgorithmState} carried by {@code T} holds its own
+ * time-related fields (window start, TAT, last refill...), so expiry handling is a store
+ * concern, not an algorithmic one. Each store enforces it with its own mechanism
+ * (an in-memory store: {@link #isExpired} on read; a Redis store: key TTL derived from the
+ * operation result's {@code expiresAt}).
+ *
  * @param <T> the concrete algorithm state type
  */
 public final class StoreState<T extends AlgorithmState> {

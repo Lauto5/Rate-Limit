@@ -20,6 +20,18 @@ import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
  * soportada se lanza {@link CorruptedStateException} en lugar de intentar interpretar datos
  * ambiguos.
  *
+ * <p><b>Politica de versionado:</b> actualmente existe una unica version (0x01) y no hay
+ * migraciones. La frontera de versionado queda definida asi:
+ *
+ * <ul>
+ *   <li>una version desconocida produce {@link CorruptedStateException} (nunca se interpretan
+ *       bytes ambiguos);</li>
+ *   <li>el store Redis trata ese estado como inexistente (politica <em>fail-open</em>) y lo
+ *       reescribe;</li>
+ *   <li>un rolling deployment con formatos distintos solo es posible introduciendo una nueva
+ *       version y conservando lectores para las anteriores.</li>
+ * </ul>
+ *
  * @param <S> the concrete algorithm state type
  */
 public final class VersionedStateCodec<S extends AlgorithmState> implements StateCodec<S> {
