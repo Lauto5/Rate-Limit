@@ -9,6 +9,7 @@ Thank you for considering a contribution to Rate Limit. This document outlines t
 - [Code of Conduct](#code-of-conduct)
 - [Getting Started](#getting-started)
 - [Development Setup](#development-setup)
+  - [Debug Scripts (Python)](#debug-scripts-python)
 - [Project Structure](#project-structure)
 - [How to Contribute](#how-to-contribute)
   - [Reporting Bugs](#reporting-bugs)
@@ -85,6 +86,48 @@ mvn compile exec:java -Dexec.mainClass="com.example.MyMain" -Dexec.args="--arg1 
 ```
 
 > The Maven Enforcer pins the build to Java 17+ / Maven 3.9+. If `mvn` refuses to run, check `mvn -version`.
+
+### Debug Scripts (Python)
+
+To avoid typing the multi-command workflows above, the repository ships a Python helper at
+`debug scripts/run.py`. It wraps every project command (compile, test, verify, install,
+examples, git status) behind one small CLI, so contributors can run the whole pipeline with a
+single call.
+
+Requirements:
+
+- **Python 3** (standard library only, no extra packages to install).
+- **Maven** on the `PATH`.
+- **Docker** only for the Redis integration tests (the script warns you if it is missing).
+
+Run it from the `debug scripts/` folder:
+
+```bash
+python3 run.py all      # full pipeline (see below)
+python3 run.py --help   # every command and option
+python3 run.py test -m redis
+```
+
+| Command | What it runs |
+|---|---|
+| `python3 run.py env` | Shows the Java / Maven / Python versions and whether Docker is available |
+| `python3 run.py status` | `git status --short` plus the last 10 commits |
+| `python3 run.py compile` | Compiles the reactor (`core`, `inmemory`, `redis`) and both example projects |
+| `python3 run.py test` | `mvn test` for the whole reactor |
+| `python3 run.py test -m <module>` | Tests a single module (`core`, `inmemory`, or `redis`); builds dependencies with `-am` |
+| `python3 run.py verify` | Full `mvn clean verify` (tests + JaCoCo coverage report) |
+| `python3 run.py install` | Installs the modules into the local Maven repository (skips tests) |
+| `python3 run.py examples` | `mvn clean package` for `examples/core-inmemory` and `examples/core-redis` |
+| `python3 run.py all` | Complete pipeline: `env` → `install` → `examples` → `clean verify` |
+
+Every command prints the exact Maven command it runs. Pass `--dry-run` to preview commands
+without executing them:
+
+```bash
+python3 run.py --dry-run all
+```
+
+> Before opening a Pull Request, run `python3 run.py all` and confirm it ends green.
 
 ---
 
