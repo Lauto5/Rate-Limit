@@ -165,7 +165,7 @@ class RateLimitServiceUnitTest {
 	class BasicCases {
 
 		@Test
-		void useShouldExecuteStoreOperation() {
+		void storeOperationShouldBeExecuted() {
 
 			// Arrange
 
@@ -192,7 +192,7 @@ class RateLimitServiceUnitTest {
 
 
 		@Test
-		void useShouldUseInjectedClock() {
+		void injectedClockShouldBeUsed() {
 
 			// Arrange
 
@@ -220,7 +220,7 @@ class RateLimitServiceUnitTest {
 
 
 		@Test
-		void useShouldPassPolicyToAtomicOperation() {
+		void policyShouldBePassedToAtomicOperation() {
 
 			// Arrange
 
@@ -250,7 +250,7 @@ class RateLimitServiceUnitTest {
 
 
 		@Test
-		void useShouldReturnMappedResult() {
+		void mappedResultShouldBeReturned() {
 
 			// Arrange
 
@@ -275,7 +275,7 @@ class RateLimitServiceUnitTest {
 		}
 	
 	@Test
-	void useShouldReturnAllowedResult() {
+	void allowedResultShouldBeReturned() {
 
 		// Arrange
 
@@ -339,7 +339,7 @@ class RateLimitServiceUnitTest {
 	}
 	
 	@Test
-	void useShouldReturnDeniedResult() {
+	void deniedResultShouldBeReturned() {
 
 		// Arrange
 

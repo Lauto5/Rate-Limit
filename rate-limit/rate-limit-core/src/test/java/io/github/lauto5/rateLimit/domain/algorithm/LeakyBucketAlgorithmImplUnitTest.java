@@ -138,7 +138,7 @@ public class LeakyBucketAlgorithmImplUnitTest {
 	class BoundaryCases {
 
 		@Test
-		void shouldAllowExactlyAtCapacityBoundary() {
+		void exactCapacityBoundaryShouldBeAllowed() {
 
 			// Arrange
 			LeakyBucketState initialState = stateWith(4.0, fixedNow);
@@ -383,7 +383,7 @@ public class LeakyBucketAlgorithmImplUnitTest {
 	class PolicyCases {
 
 		@Test
-		void shouldRespectCustomCapacity() {
+		void customCapacityShouldBeRespected() {
 
 			// Arrange
 			LeakyBucketPolicy customPolicy = policyWith(2.0, 1.0);
@@ -400,7 +400,7 @@ public class LeakyBucketAlgorithmImplUnitTest {
 		}
 
 		@Test
-		void shouldRespectCustomLeakRate() {
+		void customLeakRateShouldBeRespected() {
 
 			// Arrange
 			LeakyBucketPolicy customPolicy = policyWith(5.0, 2.0); // 2/sec
@@ -417,7 +417,7 @@ public class LeakyBucketAlgorithmImplUnitTest {
 		}
 
 		@Test
-		void shouldRespectSlowLeakRate() {
+		void slowLeakRateShouldBeRespected() {
 
 			// Arrange
 			LeakyBucketPolicy customPolicy = policyWith(5.0, 0.5); // 0.5/sec

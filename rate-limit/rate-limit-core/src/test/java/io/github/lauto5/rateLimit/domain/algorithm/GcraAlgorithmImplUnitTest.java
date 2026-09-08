@@ -335,7 +335,7 @@ public class GcraAlgorithmImplUnitTest {
 	class PolicyCases {
 
 		@Test
-		void shouldRespectCustomRate() {
+		void customRateShouldBeRespected() {
 
 			// Arrange
 			GcraPolicy customPolicy = policyWith(2.0, Duration.ofSeconds(5)); // 2 req/sec -> 500ms interval
@@ -352,7 +352,7 @@ public class GcraAlgorithmImplUnitTest {
 		}
 
 		@Test
-		void shouldRespectCustomBurst() {
+		void customBurstShouldBeRespected() {
 
 			// Arrange
 			GcraPolicy customPolicy = policyWith(1.0, Duration.ofSeconds(2)); // small burst
@@ -425,7 +425,7 @@ public class GcraAlgorithmImplUnitTest {
 		}
 
 		@Test
-		void shouldAllowAgainOnceEnoughTimeHasPassed() {
+		void requestAfterEnoughTimeHasPassedShouldBeAllowed() {
 
 			// Arrange
 			GcraState state = stateWithTat(fixedNow.plusSeconds(6)); // outside tolerance

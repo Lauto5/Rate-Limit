@@ -16,7 +16,7 @@ public class TokenBucketPolicyUnitTest {
 	class ConstructionCases {
 
 		@Test
-		void shouldCreatePolicyWithValidValues() {
+		void validValuesShouldCreatePolicy() {
 
 			// Arrange
 			double capacity = 10.0;
@@ -32,7 +32,7 @@ public class TokenBucketPolicyUnitTest {
 		}
 
 		@Test
-		void shouldAcceptSmallestPositiveCapacityAndRefillRate() {
+		void smallestPositiveCapacityAndRefillRateShouldBeAccepted() {
 
 			// Act
 			TokenBucketPolicy policy = assertDoesNotThrow(
@@ -51,7 +51,7 @@ public class TokenBucketPolicyUnitTest {
 	class CapacityValidationCases {
 
 		@Test
-		void shouldThrowWhenCapacityIsZero() {
+		void zeroCapacityShouldThrow() {
 
 			// Act
 			IllegalArgumentException exception = assertThrows(
@@ -65,7 +65,7 @@ public class TokenBucketPolicyUnitTest {
 		}
 
 		@Test
-		void shouldThrowWhenCapacityIsNegative() {
+		void negativeCapacityShouldThrow() {
 
 			// Act
 			IllegalArgumentException exception = assertThrows(
@@ -79,7 +79,7 @@ public class TokenBucketPolicyUnitTest {
 		}
 
 		@Test
-		void shouldThrowWhenCapacityIsNaN() {
+		void nanCapacityShouldThrow() {
 
 			// Act
 			IllegalArgumentException exception = assertThrows(
@@ -93,7 +93,7 @@ public class TokenBucketPolicyUnitTest {
 		}
 
 		@Test
-		void shouldThrowWhenCapacityIsPositiveInfinity() {
+		void positiveInfinityCapacityShouldThrow() {
 
 			// Act
 			IllegalArgumentException exception = assertThrows(
@@ -107,7 +107,7 @@ public class TokenBucketPolicyUnitTest {
 		}
 
 		@Test
-		void shouldThrowWhenCapacityIsNegativeInfinity() {
+		void negativeInfinityCapacityShouldThrow() {
 
 			// Act
 			IllegalArgumentException exception = assertThrows(
@@ -126,7 +126,7 @@ public class TokenBucketPolicyUnitTest {
 	class RefillRateValidationCases {
 
 		@Test
-		void shouldThrowWhenRefillRateIsZero() {
+		void zeroRefillRateShouldThrow() {
 
 			// Act
 			IllegalArgumentException exception = assertThrows(
@@ -140,7 +140,7 @@ public class TokenBucketPolicyUnitTest {
 		}
 
 		@Test
-		void shouldThrowWhenRefillRateIsNegative() {
+		void negativeRefillRateShouldThrow() {
 
 			// Act
 			IllegalArgumentException exception = assertThrows(
@@ -154,7 +154,7 @@ public class TokenBucketPolicyUnitTest {
 		}
 
 		@Test
-		void shouldThrowWhenRefillRateIsNaN() {
+		void nanRefillRateShouldThrow() {
 
 			// Act
 			IllegalArgumentException exception = assertThrows(
@@ -168,7 +168,7 @@ public class TokenBucketPolicyUnitTest {
 		}
 
 		@Test
-		void shouldThrowWhenRefillRateIsPositiveInfinity() {
+		void positiveInfinityRefillRateShouldThrow() {
 
 			// Act
 			IllegalArgumentException exception = assertThrows(
@@ -182,7 +182,7 @@ public class TokenBucketPolicyUnitTest {
 		}
 
 		@Test
-		void shouldThrowWhenRefillRateIsNegativeInfinity() {
+		void negativeInfinityRefillRateShouldThrow() {
 
 			// Act
 			IllegalArgumentException exception = assertThrows(

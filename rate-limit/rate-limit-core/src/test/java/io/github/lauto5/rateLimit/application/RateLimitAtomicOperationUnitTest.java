@@ -88,7 +88,7 @@ class RateLimitAtomicOperationUnitTest {
 	// ==================== TESTS ====================
 
 	@Test
-	void shouldCreateInitialStateWhenStoreStateIsNull() {
+	void missingStoreStateShouldCreateInitialState() {
 
 		// Arrange
 
@@ -119,7 +119,7 @@ class RateLimitAtomicOperationUnitTest {
 	}
 
 	@Test
-	void shouldUseExistingStateFromStore() {
+	void existingStoreStateShouldBeUsed() {
 
 		// Arrange
 
@@ -152,7 +152,7 @@ class RateLimitAtomicOperationUnitTest {
 	}
 
 	@Test
-	void shouldReturnAlgorithmResultInsideAtomicOperationResult() {
+	void algorithmResultShouldBeReturnedInsideAtomicOperationResult() {
 
 		// Arrange
 
@@ -184,7 +184,7 @@ class RateLimitAtomicOperationUnitTest {
 	}
 
 	@Test
-	void shouldCreateStoreStateUsingAlgorithmResult() {
+	void storeStateShouldBeCreatedFromAlgorithmResult() {
 
 		// Arrange
 

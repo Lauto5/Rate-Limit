@@ -440,7 +440,7 @@ public class SlidingWindowLogAlgorithmImplUnitTest {
 	class PolicyCases {
 
 		@Test
-		void shouldRespectCustomLimit() {
+		void customLimitShouldBeRespected() {
 
 			// Arrange
 			SlidingWindowLogPolicy customPolicy = policyWith(1, Duration.ofMinutes(1));
@@ -458,7 +458,7 @@ public class SlidingWindowLogAlgorithmImplUnitTest {
 		}
 
 		@Test
-		void shouldRespectCustomWindowSize() {
+		void customWindowSizeShouldBeRespected() {
 
 			// Arrange
 			SlidingWindowLogPolicy customPolicy = policyWith(5, Duration.ofSeconds(30));
@@ -526,7 +526,7 @@ public class SlidingWindowLogAlgorithmImplUnitTest {
 		}
 
 		@Test
-		void shouldAllowAgainOnceOldestTimestampSlidesOutOfWindow() {
+		void requestAfterOldestTimestampSlidesOutShouldBeAllowed() {
 
 			// Arrange
 			SlidingWindowLogState state = stateWith(new ArrayList<>());

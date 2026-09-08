@@ -51,7 +51,7 @@ class RateLimitTest {
 	// ============================================================
 
 	@Test
-	void firstRequestShouldBeAllowed() {
+	void shouldAllowFirstRequest() {
 
 		// Arrange
 
@@ -85,7 +85,7 @@ class RateLimitTest {
 	}
 
 	@Test
-	void requestShouldBeDeniedAfterLimitIsReached() {
+	void shouldDenyRequestAfterLimitIsReached() {
 
 		// Arrange
 
@@ -134,7 +134,7 @@ class RateLimitTest {
 	}
 
 	@Test
-	void differentIdentifiersShouldHaveIndependentLimits() {
+	void shouldKeepLimitsIndependentPerIdentifier() {
 
 		// Arrange
 

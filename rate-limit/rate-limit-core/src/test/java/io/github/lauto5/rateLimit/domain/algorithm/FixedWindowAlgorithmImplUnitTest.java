@@ -461,7 +461,7 @@ public class FixedWindowAlgorithmImplUnitTest {
 	class PolicyCases {
 
 		@Test
-		void shouldRespectCustomLimit() {
+		void customLimitShouldBeRespected() {
 
 			// Arrange
 			FixedWindowPolicy customPolicy = policyWith(1, Duration.ofMinutes(1));
@@ -478,7 +478,7 @@ public class FixedWindowAlgorithmImplUnitTest {
 		}
 
 		@Test
-		void shouldRespectCustomWindow() {
+		void customWindowShouldBeRespected() {
 
 			// Arrange
 			Duration customDuration = Duration.ofSeconds(10);
@@ -496,7 +496,7 @@ public class FixedWindowAlgorithmImplUnitTest {
 		}
 
 		@Test
-		void shouldRespectLargeWindow() {
+		void largeWindowShouldBeRespected() {
 
 			// Arrange
 			Duration largeDuration = Duration.ofHours(24);
@@ -566,7 +566,7 @@ public class FixedWindowAlgorithmImplUnitTest {
 		}
 
 		@Test
-		void shouldBehaveLikeFixedWindow() {
+		void requestsAcrossWindowsShouldBehaveLikeFixedWindow() {
 
 			// Arrange
 			FixedWindowState state = stateWith(0, fixedNow);

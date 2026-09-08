@@ -18,7 +18,7 @@ public class FixedWindowPolicyUnitTest {
 	class ConstructionCases {
 
 		@Test
-		void shouldCreatePolicyWithValidValues() {
+		void validValuesShouldCreatePolicy() {
 
 			// Arrange
 			int limit = 10;
@@ -34,7 +34,7 @@ public class FixedWindowPolicyUnitTest {
 		}
 
 		@Test
-		void shouldAcceptWindowSizeExactlyOneSecond() {
+		void oneSecondWindowShouldBeAccepted() {
 
 			// Arrange
 			Duration windowSize = Duration.ofSeconds(1);
@@ -55,7 +55,7 @@ public class FixedWindowPolicyUnitTest {
 	class LimitValidationCases {
 
 		@Test
-		void shouldThrowWhenLimitIsZero() {
+		void zeroLimitShouldThrow() {
 
 			// Arrange
 			Duration windowSize = Duration.ofMinutes(1);
@@ -72,7 +72,7 @@ public class FixedWindowPolicyUnitTest {
 		}
 
 		@Test
-		void shouldThrowWhenLimitIsNegative() {
+		void negativeLimitShouldThrow() {
 
 			// Arrange
 			Duration windowSize = Duration.ofMinutes(1);
@@ -94,7 +94,7 @@ public class FixedWindowPolicyUnitTest {
 	class WindowSizeValidationCases {
 
 		@Test
-		void shouldThrowWhenWindowSizeIsNull() {
+		void nullWindowSizeShouldThrow() {
 
 			// Act
 			IllegalArgumentException exception = assertThrows(
@@ -108,7 +108,7 @@ public class FixedWindowPolicyUnitTest {
 		}
 
 		@Test
-		void shouldThrowWhenWindowSizeIsZero() {
+		void zeroWindowSizeShouldThrow() {
 
 			// Act
 			IllegalArgumentException exception = assertThrows(
@@ -122,7 +122,7 @@ public class FixedWindowPolicyUnitTest {
 		}
 
 		@Test
-		void shouldThrowWhenWindowSizeIsNegative() {
+		void negativeWindowSizeShouldThrow() {
 
 			// Act
 			IllegalArgumentException exception = assertThrows(
@@ -136,7 +136,7 @@ public class FixedWindowPolicyUnitTest {
 		}
 
 		@Test
-		void shouldThrowWhenWindowSizeIsBelowOneSecond() {
+		void subOneSecondWindowShouldThrow() {
 
 			// Arrange
 			Duration windowSize = Duration.ofMillis(999);

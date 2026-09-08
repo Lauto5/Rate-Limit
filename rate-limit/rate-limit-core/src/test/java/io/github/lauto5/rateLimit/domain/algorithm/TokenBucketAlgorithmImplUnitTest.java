@@ -138,7 +138,7 @@ public class TokenBucketAlgorithmImplUnitTest {
 	class BoundaryCases {
 
 		@Test
-		void shouldAllowExactlyAtOneToken() {
+		void exactOneTokenShouldBeAllowed() {
 
 			// Arrange
 			TokenBucketState initialState = stateWith(1.0, fixedNow);
@@ -156,7 +156,7 @@ public class TokenBucketAlgorithmImplUnitTest {
 		}
 
 		@Test
-		void shouldDenyJustBelowOneToken() {
+		void justBelowOneTokenShouldBeDenied() {
 
 			// Arrange
 			TokenBucketState initialState = stateWith(0.5, fixedNow);
@@ -173,7 +173,7 @@ public class TokenBucketAlgorithmImplUnitTest {
 		}
 
 		@Test
-		void shouldNotExceedCapacityWhenRefilling() {
+		void refillingShouldNotExceedCapacity() {
 
 			// Arrange
 			TokenBucketState initialState = stateWith(4.0, fixedNow);
@@ -419,7 +419,7 @@ public class TokenBucketAlgorithmImplUnitTest {
 	class PolicyCases {
 
 		@Test
-		void shouldRespectCustomCapacity() {
+		void customCapacityShouldBeRespected() {
 
 			// Arrange
 			TokenBucketPolicy customPolicy = policyWith(2.0, 1.0);
@@ -436,7 +436,7 @@ public class TokenBucketAlgorithmImplUnitTest {
 		}
 
 		@Test
-		void shouldRespectCustomRefillRate() {
+		void customRefillRateShouldBeRespected() {
 
 			// Arrange
 			TokenBucketPolicy customPolicy = policyWith(5.0, 2.0); // 2 tokens/sec
@@ -453,7 +453,7 @@ public class TokenBucketAlgorithmImplUnitTest {
 		}
 
 		@Test
-		void shouldRespectSlowRefillRate() {
+		void slowRefillRateShouldBeRespected() {
 
 			// Arrange
 			TokenBucketPolicy customPolicy = policyWith(5.0, 0.5); // 0.5 tokens/sec

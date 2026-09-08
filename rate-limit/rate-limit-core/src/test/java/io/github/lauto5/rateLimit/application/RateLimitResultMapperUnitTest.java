@@ -82,7 +82,7 @@ class RateLimitResultMapperUnitTest {
 	class AllowedCases {
 
 		@Test
-		void shouldMapAllowedDecision() {
+		void allowedDecisionShouldBeMapped() {
 
 			// Arrange
 
@@ -132,7 +132,7 @@ class RateLimitResultMapperUnitTest {
 	class DeniedCases {
 
 		@Test
-		void shouldMapDeniedDecision() {
+		void deniedDecisionShouldBeMapped() {
 
 			// Arrange
 
@@ -182,7 +182,7 @@ class RateLimitResultMapperUnitTest {
 	class ValidationCases {
 
 		@Test
-		void shouldRejectNullAtomicOperationResult() {
+		void nullAtomicOperationResultShouldBeRejected() {
 
 			// Arrange
 
