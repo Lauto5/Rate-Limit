@@ -19,6 +19,13 @@
 			<artifactId>rate-limit-core</artifactId>
 		</dependency>
 
+		<!-- Test-scope: store de referencia para los tests de contrato (mismas decisiones) -->
+		<dependency>
+			<groupId>io.github.lauto5</groupId>
+			<artifactId>rate-limit-inmemory</artifactId>
+			<scope>test</scope>
+		</dependency>
+
 		<!-- Cliente Redis -->
 		<dependency>
 			<groupId>io.lettuce</groupId>
@@ -35,13 +42,6 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-		</dependency>
-
-		<!-- SLF4J Simple Provider (outputs to System.err) -->
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-simple</artifactId>
-			<scope>runtime</scope>
 		</dependency>
 
 		<!-- JUnit 5 Engine & API -->

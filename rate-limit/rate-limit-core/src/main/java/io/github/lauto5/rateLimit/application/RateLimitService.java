@@ -79,10 +79,10 @@ public final class RateLimitService<S extends AlgorithmState , P extends RateLim
         RateLimitResult mapped = RateLimitResultMapper.fromAtomicOperationResult(result);
 
         if (mapped.isAllowed()) {
-        	logger.info("Request allowed for identifier '" + identifier
+        	logger.debug("Request allowed for identifier '" + identifier
         			+ "' - remaining: " + mapped.getRemaining());
         } else {
-        	logger.warn("Request denied for identifier '" + identifier
+        	logger.debug("Request denied for identifier '" + identifier
         			+ "' - retry after: " + mapped.getRetryAfter().map(Object::toString).orElse("n/a"));
         }
 

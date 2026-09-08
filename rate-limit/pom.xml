@@ -50,6 +50,11 @@
 				<artifactId>rate-limit-core</artifactId>
 				<version>${project.version}</version>
 			</dependency>
+			<dependency>
+				<groupId>io.github.lauto5</groupId>
+				<artifactId>rate-limit-inmemory</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
 			<!-- JUnit 5 Engine & API -->
 			<dependency>

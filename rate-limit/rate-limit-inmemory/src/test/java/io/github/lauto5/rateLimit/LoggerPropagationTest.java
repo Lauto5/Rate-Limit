@@ -54,18 +54,18 @@ class LoggerPropagationTest {
         );
 
         assertTrue(
+                logger.anyMessageContaining("Request allowed"),
+                "expected an allowed-decision debug log"
+        );
+
+        assertTrue(
+                logger.anyMessageContaining("Request denied"),
+                "expected a denied-decision debug log"
+        );
+
+        assertTrue(
                 logger.any(Logger.Level.DEBUG),
                 "expected debug-level logs from the pipeline"
-        );
-
-        assertTrue(
-                logger.any(Logger.Level.INFO),
-                "expected an info-level allowed log"
-        );
-
-        assertTrue(
-                logger.any(Logger.Level.WARN),
-                "expected a warn-level denied log"
         );
     }
 
