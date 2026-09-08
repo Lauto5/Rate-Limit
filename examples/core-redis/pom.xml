@@ -2,37 +2,34 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>io.github.lauto5.examples</groupId>
+
+	<parent>
+		<groupId>io.github.lauto5.examples</groupId>
+		<artifactId>rate-limit-examples</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+
 	<artifactId>core-redis</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<name>rate limit example - core + redis</name>
 	<description>Ejemplo externo: usa rate-limit-core con la persistencia en Redis (Lettuce).</description>
-
-	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.release>8</maven.compiler.release>
-	</properties>
 
 	<dependencies>
 
 		<dependency>
 			<groupId>io.github.lauto5</groupId>
 			<artifactId>rate-limit-core</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
 			<groupId>io.github.lauto5</groupId>
 			<artifactId>rate-limit-redis</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 
 		<!-- Proveedor concreto de SLF4J requerido por Lettuce -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-simple</artifactId>
-			<version>2.0.18</version>
 			<scope>runtime</scope>
 		</dependency>
 
@@ -43,7 +40,6 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>exec-maven-plugin</artifactId>
-				<version>3.5.0</version>
 				<configuration>
 					<mainClass>io.github.lauto5.example.RedisExample</mainClass>
 				</configuration>

@@ -1,0 +1,70 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>io.github.lauto5.examples</groupId>
+	<artifactId>rate-limit-examples</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>pom</packaging>
+	<name>rate limit examples</name>
+	<description>Standalone consumer examples of the rate-limit library (outside the main reactor, they consume the installed artifacts).</description>
+
+	<modules>
+		<module>core-inmemory</module>
+		<module>core-redis</module>
+	</modules>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.release>8</maven.compiler.release>
+
+		<!-- Versiones espejo del parent principal rate-limit/pom.xml:
+		     mantenerlas en sincronia con el reactor al actualizar. -->
+		<exec.plugin.version>3.5.0</exec.plugin.version>
+		<slf4j.version>2.0.18</slf4j.version>
+	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+
+			<!-- Modulos de la libreria: deben coincidir con la version instalada
+			     mediante 'mvn -f rate-limit/pom.xml install'. -->
+			<dependency>
+				<groupId>io.github.lauto5</groupId>
+				<artifactId>rate-limit-core</artifactId>
+				<version>0.0.1-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>io.github.lauto5</groupId>
+				<artifactId>rate-limit-inmemory</artifactId>
+				<version>0.0.1-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>io.github.lauto5</groupId>
+				<artifactId>rate-limit-redis</artifactId>
+				<version>0.0.1-SNAPSHOT</version>
+			</dependency>
+
+			<!-- Proveedor concreto de SLF4J requerido por Lettuce -->
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-simple</artifactId>
+				<version>${slf4j.version}</version>
+				<scope>runtime</scope>
+			</dependency>
+
+		</dependencies>
+	</dependencyManagement>
+
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>exec-maven-plugin</artifactId>
+					<version>${exec.plugin.version}</version>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+</project>

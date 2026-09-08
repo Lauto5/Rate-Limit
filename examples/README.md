@@ -3,6 +3,18 @@
 Proyectos externos que consumen la libreria empaquetada, validando que el usuario
 solamente necesita agregar la combinacion de dependencias que desea.
 
+## Configuración
+
+Ambos proyectos comparten el parent `examples/pom.xml`, que centraliza la
+configuración común (encoding, target Java 8, versión de `exec-maven-plugin` y de
+`slf4j-simple`, y las versiones de los módulos de la libreria). Las versiones reflejan
+las del parent principal `rate-limit/pom.xml`: al actualizarlas en el reactor, hay que
+mantenerlas en sincronía aquí. Para compilar los dos ejemplos a la vez:
+
+```bash
+mvn -f examples/pom.xml package
+```
+
 ## Prerequisito
 
 Instalar los modulos en el repositorio local de Maven:
