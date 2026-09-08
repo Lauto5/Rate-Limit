@@ -368,7 +368,7 @@ contention on a single key exhausts the bounded retries (currently `MAX_RETRIES 
 
 Each unit of work runs on a **dedicated connection** because Redis transactions and `WATCH` are connection-scoped; interleaving `MULTI`/`EXEC` calls across threads on a shared connection is not allowed by the Redis protocol. Before a connection returns to the pool it is guaranteed clean: a failed body/network/protocol path runs best-effort `DISCARD` (if inside `MULTI`) or `UNWATCH` (if only `WATCH` was issued) as `LettuceTransactionPort.cleanupTransactionState`, so a connection with residual `WATCH`/`MULTI` state is never handed to another thread.
 
-Persisted values are encoded with `VersionedStateCodec` (`"RL"` magic + version byte + payload). Because the codec is part of the core, states written by any version of the library remain forward-readable; corrupt or truncated data is treated as absent (with a warning) and rewritten from scratch. The versioning policy is **fail-closed on decode** (an unknown version raises `CorruptedStateException`, never ambiguous interpretation) but **fail-open at the store** (that state is treated as absent and rebuilt), which together keep a mismatched version from silently corrupting counters.
+Persisted values are encoded with `VersionedStateCodec` (`"RL"` magic + version byte + payload). Because the codec is part of the core, states written by any version of the library remain forward-readable; corrupt or truncated data is treated as absent (with a warning) and rewritten from scratch. The versioning policy is **fail-closed on decode** (an unknown version raises `CorruptedStateException`, never ambiguous interpretation) but **fail-open at the store** (that state is treated as absent and rebuilt), which together keep a mismatched version from silently corrupting counters. The boundary is total: the decorator also normalizes any failure of the concrete codec to interpret a *payload with a valid header* (for example a `NumberFormatException` when decoding a state from a different algorithm under the same key) into `CorruptedStateException`, so no decode path aborts a request -- every undecodable state is rebuilt from scratch.
 
 Because atomicity for a single identifier is already part of the `RateLimitStore` contract, adding a Redis backend required **no changes** to the domain layer -- only a new infrastructure adapter in its own module.
 
@@ -379,6 +379,40 @@ Because atomicity for a single identifier is already part of the `RateLimitStore
 stores, asserting identical allowed/denied decisions -- proving the Redis adapter is a
 drop-in replacement for the in-memory one. It also stresses one shared key with **1000
 concurrent operations** (limit 100) and asserts `allowed <= limit` under real contention.
+
+---
+
+## Etapa 3 -- Revisión final y decisión de merge
+
+Auditoría de cierre del feature: cada área revisada quedó clasificada
+(🔴 corregir / 🟠 ajustar / 🟡 documentar / 🟢 validar):
+
+| Área auditada | Clasificación | Justificación |
+|---|---|---|
+| `RedisStore` (retries, backoff, TTL, namespace, validación) | 🟢 | Bounded `MAX_RETRIES=25`, backoff 0..64 ms con interrupción restaurada, TTL con piso de 1 ms, keys con namespace, identifier validado; cubierto por `RedisStoreUnitTest`. |
+| `LettuceTransactionPort` (limpieza de conexión, pool, conflicto vs infra) | 🟢 | `DISCARD`/`UNWATCH` best-effort antes de devolver al pool; conflicto `WATCH` devuelve `null`, error de infraestructura se propaga; redis reusable tras fallo en body. |
+| Concurrencia real | 🟢 | `LettuceTransactionPortIntegrationTest$ConcurrencyCases` (barrera), 20 threads en `RedisStoreUnitTest`, 1000 operaciones sobre una key en `StoreContractTest`. |
+| WATCH/MULTI/EXEC vs errores de infra` | 🟢 | `infraErrorShouldPropagateWithoutRetrying`, `maxRetriesShouldBeExhaustedOnPersistentConflict`. |
+| TTL / expiración | 🟢 | Invariante `StoreState.expiresAt` = metadata; Redis usa `PEXPIRE`, InMemory usa `isExpired` al leer; contract test confirma decisiones idénticas. |
+| Corrupción de estado (fail-open/fail-closed) | 🟠 → 🟢 | Política documentada y frontiera total: cualquier payload indecodificable (aun con header válido) se normaliza a `CorruptedStateException` y el store lo reescribe desde cero. |
+| Dependencias Maven | 🟠 → 🟢 | Dirección `inmemory/redis -> core` respetada; se eliminó la entrada muerta `slf4j-simple` del `dependencyManagement` del parent. El consumidor elige su proveedor SLF4J. |
+| API pública | 🟡 | `api/`, `Persistence` y policies forman la superficie soportada. Clases de `application`/`infrastructure` son públicas por cohesión de paquete; sellarlas es futuro (`feature/api-v2`). |
+| Tests de integración | 🟢 | Testcontainers (`redis:7-alpine`) en integración y contract tests entre `InMemoryStore` y `RedisStore`. |
+| Java 8 (runtime) vs JDK de build | 🟢 | `--release 8` + enforcer `[9,)`; política documentada en README. |
+| Documentación | 🟢 | README, ARCHITECTURE.md y CONTRIBUTING.md al día. |
+
+Decisiones documentadas que quedan **explícitamente fuera de esta rama** (features futuros):
+
+- `feature/redis-hardening` -- pool de conexiones fijo (`maxTotal=8`, bloqueo indefinido al agotar) no configurable; hacerlo configurable y medir latencia de cola.
+- `feature/inmemory-eviction` -- `InMemoryStore` no evicta entradas vencidas; crecimiento acotado del mapa para identifiers arbitrarios.
+- `feature/api-v2` -- sellar clases internas de `application`/`infrastructure` y reducir la doble superficie de `RateLimitResult` (constructor + factories).
+- `feature/redis-lua-atomic-operations` -- scripts Lua en reemplazo de WATCH/MULTI/EXEC.
+- `feature/observability` -- Micrometer / métricas de conflictos, reintentos y latencia.
+- `feature/spring-boot-integration` -- autoconfiguración para Spring Boot.
+
+**Decisión:** el feature está listo para merge a `main`. Todos los puntos del criterio de la
+etapa 3 se cumplen: sin `🔴` pendientes, `🟠` resueltos (con tests), `🟡` documentados, `🟢`
+validados, suite completa en verde (231 tests) y política Java 8 / JDK de build documentada.
 
 ---
 

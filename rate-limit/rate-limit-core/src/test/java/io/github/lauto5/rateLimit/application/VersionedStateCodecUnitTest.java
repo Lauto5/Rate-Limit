@@ -53,6 +53,33 @@ class VersionedStateCodecUnitTest {
 		assertThrows(CorruptedStateException.class, () -> codec.decode(bad));
 	}
 
+	@Test
+	void decodeShouldNormalizeDelegateFailuresAsCorruptedState() {
+
+		// Arrange - el header es valido pero el codec delegado no puede interpretar el payload
+		VersionedStateCodec<FakeState> throwing = new VersionedStateCodec<>(new StateCodec<FakeState>() {
+
+			@Override
+			public byte[] encode(FakeState state) {
+				return state.payload.getBytes(StandardCharsets.UTF_8);
+			}
+
+			@Override
+			public FakeState decode(byte[] data) {
+				throw new NumberFormatException("payload ilegible");
+			}
+		});
+
+		byte[] faked = new byte[] { 'R', 'L', 0x01, 'x', 'y' };
+
+		// Act & Assert - el fallo del codec concreto se normaliza a CorruptedStateException
+		// para que el store pueda aplicar su politica fail-open (tratar como inexistente)
+		CorruptedStateException thrown = assertThrows(CorruptedStateException.class,
+				() -> throwing.decode(faked));
+		assertEquals(NumberFormatException.class, thrown.getCause().getClass());
+
+	}
+
 	private static final class FakeState implements AlgorithmState {
 
 		private final String payload;

@@ -75,7 +75,21 @@ public final class VersionedStateCodec<S extends AlgorithmState> implements Stat
 			throw new CorruptedStateException(
 					"Version de formato no soportada: " + (data[2] & 0xFF));
 		}
-		return delegate.decode(Arrays.copyOfRange(data, HEADER_LENGTH, data.length));
+
+		byte[] payload = Arrays.copyOfRange(data, HEADER_LENGTH, data.length);
+
+		try {
+			return delegate.decode(payload);
+		} catch (RuntimeException e) {
+			/*
+			 * El header es valido pero el codec concreto no pudo interpretar el payload
+			 * (por ejemplo, un NumberFormatException del codec de FixedWindow). Se normaliza
+			 * a CorruptedStateException para que el store aplique su politica fail-open:
+			 * tratar el estado como inexistente y reescribirlo, en lugar de fallar la request.
+			 */
+			throw new CorruptedStateException(
+					"Payload de estado ilegible: " + e.getMessage(), e);
+		}
 	}
 
 	private static String describeBytes(byte[] data) {

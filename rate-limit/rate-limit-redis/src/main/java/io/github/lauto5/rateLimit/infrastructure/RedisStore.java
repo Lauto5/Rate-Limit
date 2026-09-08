@@ -119,9 +119,9 @@ public class RedisStore implements RateLimitStore, AutoCloseable {
 					+ "' on attempt " + (attempt + 1) + "; retrying");
 
 			/*
-* Backoff exponencial con jitter completo (0..2^intento, tope 64ms) para
-		 * desincronizar los reintentos bajo contencion alta: sin la espera, todos los
-		 * contendientes vuelven a mirar a la vez y pueden starvearse mutuamente (livelock).
+			 * Backoff exponencial con jitter completo (0..2^intento, tope 64ms) para
+			 * desincronizar los reintentos bajo contencion alta: sin la espera, todos los
+			 * contendientes vuelven a mirar a la vez y pueden starvearse mutuamente (livelock).
 			 */
 			if (attempt < MAX_RETRIES - 1) {
 				backoffBeforeRetry(attempt);

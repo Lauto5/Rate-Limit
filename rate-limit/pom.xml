@@ -100,19 +100,11 @@
 				<scope>test</scope>
 			</dependency>
 
-			<!-- SLF4J API -->
+			<!-- SLF4J API (requerido por Lettuce en rate-limit-redis) -->
 			<dependency>
 				<groupId>org.slf4j</groupId>
 				<artifactId>slf4j-api</artifactId>
 				<version>${slf4j.version}</version>
-			</dependency>
-
-			<!-- SLF4J Simple Provider (outputs to System.err) -->
-			<dependency>
-				<groupId>org.slf4j</groupId>
-				<artifactId>slf4j-simple</artifactId>
-				<version>${slf4j.version}</version>
-				<scope>runtime</scope>
 			</dependency>
 
 		</dependencies>

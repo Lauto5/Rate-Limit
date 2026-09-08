@@ -146,6 +146,35 @@ public class RedisStoreUnitTest {
 
 	}
 
+	@Test
+	void corruptedPayloadWithValidHeaderShouldBeResetAndRewritten() {
+
+		// Arrange - el header versionado es valido pero el payload del codec concreto es
+		// ilegible: pasa la validacion de cabecera y rompe el decode de FixedWindow
+		String identifier = "corrupted-payload-" + System.nanoTime();
+		byte[] header = new byte[] { 'R', 'L', 0x01 };
+		byte[] garbagePayload = "not-a-number|also-not-a-number".getBytes(StandardCharsets.UTF_8);
+		byte[] faked = new byte[header.length + garbagePayload.length];
+		System.arraycopy(header, 0, faked, 0, header.length);
+		System.arraycopy(garbagePayload, 0, faked, header.length, garbagePayload.length);
+		fakeKeyValueStore.putRaw(NS + identifier, faked);
+
+		FixedWindowAlgorithmImpl algorithm = new FixedWindowAlgorithmImpl();
+		FixedWindowPolicy policy = new FixedWindowPolicy(5, Duration.ofMinutes(1));
+		AlgorithmContext context = new AlgorithmContext(Instant.now());
+
+		RateLimitAtomicOperation<?, ?> operation =
+				new RateLimitAtomicOperation<>(algorithm, policy, context);
+
+		// Act - no debe lanzar NumberFormatException: se trata como estado inexistente
+		AtomicOperationResult<?> result = redisStore.executeAtomically(identifier, operation);
+
+		// Assert - politica fail-open: se reescribe desde cero en lugar de fallar la request
+		assertTrue(result.getAlgorithmResult().isAllowed());
+		assertTrue(fakeKeyValueStore.exists(NS + identifier));
+
+	}
+
 	// ==================== TTL calculation ====================
 
 	@Test
