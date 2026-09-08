@@ -11,7 +11,7 @@ import io.github.lauto5.rateLimit.domain.algorithm.RateLimitAlgorithm;
 import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
 import io.github.lauto5.rateLimit.domain.context.AlgorithmContext;
 import io.github.lauto5.rateLimit.domain.policies.RateLimitPolicy;
-import io.github.lauto5.rateLimit.logging.NoOpLogger;
+import io.github.lauto5.rateLimit.application.logging.NoOpLogger;
 
 /**
  * Orchestrates a rate-limit evaluation end to end at the application layer.

@@ -1,4 +1,4 @@
-package io.github.lauto5.rateLimit.logging;
+package io.github.lauto5.rateLimit.application.logging;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

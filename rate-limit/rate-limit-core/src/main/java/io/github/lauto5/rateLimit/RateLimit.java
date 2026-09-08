@@ -10,7 +10,7 @@ import io.github.lauto5.rateLimit.application.ports.out.RateLimitStore;
 import io.github.lauto5.rateLimit.domain.algorithm.RateLimitAlgorithm;
 import io.github.lauto5.rateLimit.domain.algorithmState.AlgorithmState;
 import io.github.lauto5.rateLimit.domain.policies.RateLimitPolicy;
-import io.github.lauto5.rateLimit.logging.NoOpLogger;
+import io.github.lauto5.rateLimit.application.logging.NoOpLogger;
 
 /**
  * Public facade and entry point for the rate-limiting library.

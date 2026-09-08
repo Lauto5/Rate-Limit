@@ -3,7 +3,7 @@ package io.github.lauto5.rateLimit.inmemory;
 import io.github.lauto5.rateLimit.application.ports.out.Logger;
 import io.github.lauto5.rateLimit.application.ports.out.RateLimitStore;
 import io.github.lauto5.rateLimit.infrastructure.InMemoryStore;
-import io.github.lauto5.rateLimit.logging.NoOpLogger;
+import io.github.lauto5.rateLimit.application.logging.NoOpLogger;
 
 /**
  * Static factory for the in-memory {@link RateLimitStore} implementation.

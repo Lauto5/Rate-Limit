@@ -4,7 +4,7 @@ import io.github.lauto5.rateLimit.application.ports.out.Logger;
 import io.github.lauto5.rateLimit.application.ports.out.RateLimitStore;
 import io.github.lauto5.rateLimit.infrastructure.LettuceTransactionPort;
 import io.github.lauto5.rateLimit.infrastructure.RedisStore;
-import io.github.lauto5.rateLimit.logging.NoOpLogger;
+import io.github.lauto5.rateLimit.application.logging.NoOpLogger;
 
 /**
  * Static factory for the Redis-backed {@link RateLimitStore} implementation.

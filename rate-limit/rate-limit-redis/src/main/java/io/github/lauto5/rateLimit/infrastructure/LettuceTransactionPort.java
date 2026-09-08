@@ -15,7 +15,7 @@ import io.lettuce.core.codec.StringCodec;
 import io.lettuce.core.support.ConnectionPoolSupport;
 
 import io.github.lauto5.rateLimit.application.ports.out.Logger;
-import io.github.lauto5.rateLimit.logging.NoOpLogger;
+import io.github.lauto5.rateLimit.application.logging.NoOpLogger;
 
 /**
  * {@link RedisTransactionPort} implementation backed by Lettuce.

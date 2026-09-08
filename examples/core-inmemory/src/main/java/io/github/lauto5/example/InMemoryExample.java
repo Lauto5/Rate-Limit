@@ -6,7 +6,7 @@ import io.github.lauto5.rateLimit.RateLimit;
 import io.github.lauto5.rateLimit.api.RateLimitResult;
 import io.github.lauto5.rateLimit.domain.algorithm.FixedWindowAlgorithmImpl;
 import io.github.lauto5.rateLimit.domain.policies.FixedWindowPolicy;
-import io.github.lauto5.rateLimit.logging.ConsoleLogger;
+import io.github.lauto5.rateLimit.application.logging.ConsoleLogger;
 import io.github.lauto5.rateLimit.application.ports.out.Logger;
 import io.github.lauto5.rateLimit.application.ports.out.RateLimitStore;
 import io.github.lauto5.rateLimit.inmemory.Persistence;

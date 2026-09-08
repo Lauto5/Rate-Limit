@@ -172,7 +172,7 @@ Rate Limit exposes a pluggable `Logger` port (`io.github.lauto5.rateLimit.applic
 import io.github.lauto5.rateLimit.RateLimit;
 import io.github.lauto5.rateLimit.api.Algorithm;
 import io.github.lauto5.rateLimit.inmemory.Persistence;
-import io.github.lauto5.rateLimit.logging.ConsoleLogger;
+import io.github.lauto5.rateLimit.application.logging.ConsoleLogger;
 import io.github.lauto5.rateLimit.domain.policies.FixedWindowPolicy;
 
 // The built-in console logger emits INFO+ by default
