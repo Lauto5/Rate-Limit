@@ -181,4 +181,40 @@ class InMemoryStoreUnitTest {
 			assertEquals(newState.getExpiresAt(), result.getStoreState().getExpiresAt());
 		}
 	}
+
+	@Nested
+	class ValidationCases {
+
+		@Test
+		void shouldRejectNullIdentifier() {
+
+			// Arrange
+
+			FakeAtomicOperation<FixedWindowState> operation =
+					operationReturning(storeStateWith(stateWith(1), NOW.plusSeconds(60)));
+
+			// Act & Assert
+
+			assertThrows(
+					IllegalArgumentException.class,
+					() -> store.executeAtomically(null, operation)
+			);
+		}
+
+		@Test
+		void shouldRejectEmptyIdentifier() {
+
+			// Arrange
+
+			FakeAtomicOperation<FixedWindowState> operation =
+					operationReturning(storeStateWith(stateWith(1), NOW.plusSeconds(60)));
+
+			// Act & Assert
+
+			assertThrows(
+					IllegalArgumentException.class,
+					() -> store.executeAtomically("", operation)
+			);
+		}
+	}
 }

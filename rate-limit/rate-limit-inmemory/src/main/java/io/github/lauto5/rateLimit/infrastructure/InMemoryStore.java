@@ -43,6 +43,10 @@ public class InMemoryStore implements RateLimitStore {
 	public <S extends AlgorithmState> AtomicOperationResult<S> executeAtomically(String identifier,
 			AtomicOperation<S> operation) {
 
+		if (identifier == null || identifier.isEmpty()) {
+			throw new IllegalArgumentException("Identifier must not be null or empty");
+		}
+
 		/*
 		 * 1,
 		 * We create an AtomicReference to hold the AtomicOperationResult and then return it.
