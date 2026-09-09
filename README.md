@@ -2,7 +2,7 @@
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.lauto5/rate-limit.svg)](https://central.sonatype.com/artifact/io.github.lauto5/rate-limit/1.0.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Java](https://img.shields.io/badge/Java-17+-blue.svg)](https://www.oracle.com/java/)
+[![Java](https://img.shields.io/badge/Java-8+-blue.svg)](https://www.oracle.com/java/)
 
 A lightweight, extensible rate limiting library for Java applications built on hexagonal architecture principles.
 
@@ -81,7 +81,14 @@ The project is a Maven multi-module reactor:
 
 ## Installation
 
-Add `rate-limit-core` plus the persistence module you need.
+Rate Limit `1.0.0` is **published on Maven Central** — no extra repository or plugin is needed.
+Downloads work out of the box with any build tool that reads Central (Maven, Gradle, SBT,
+Leiningen, Ivy, ...), or directly from the
+[Central Repository](https://central.sonatype.com/artifact/io.github.lauto5/rate-limit/1.0.0)
+at `io.github.lauto5`.
+
+The library runs on **Java 8 and later** (all artifacts ship as Java 8 bytecode) and supports
+**Maven 3.9+**. Add `rate-limit-core` plus the persistence module you need:
 
 ### In-memory (single instance)
 
