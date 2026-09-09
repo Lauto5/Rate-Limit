@@ -1,9 +1,8 @@
 # Rate Limit
 
-<!-- TODO: Add badges once published -->
-<!-- [![Maven Central](https://img.shields.io/maven-central/v/io.github.lauto5/rate-limit.svg)](https://search.maven.org/search?q=g:io.github.lauto5%20AND%20a:rate-limit) -->
-<!-- [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) -->
-<!-- [![Java](https://img.shields.io/badge/Java-17+-blue.svg)](https://www.oracle.com/java/) -->
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.lauto5/rate-limit.svg)](https://central.sonatype.com/artifact/io.github.lauto5/rate-limit/1.0.0)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Java](https://img.shields.io/badge/Java-17+-blue.svg)](https://www.oracle.com/java/)
 
 A lightweight, extensible rate limiting library for Java applications built on hexagonal architecture principles.
 

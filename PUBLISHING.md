@@ -1,5 +1,8 @@
 # Releasing Rate-Limit to Maven Central
 
+**Status:** `1.0.0` is published and live on Maven Central (`io.github.lauto5:*`),
+released on 2026-09-08 with `-Dcentral.autoPublish=true`.
+
 This document describes the official release pipeline of the library (feature
 `maven-central-publishing`). Releasing is performed in two phases, by design:
 
