@@ -10,8 +10,11 @@ This document describes the official release pipeline of the library (feature
    (compile, test, sources, javadoc, GPG signatures, checksums) as a single Central bundle
    and uploads it to the [Central Portal](https://central.sonatype.com) for validation.
    The final publish of a validated deployment is done from the portal UI.
-2. **Automation (Stage 8)**: CI/CD for future releases is intentionally deferred until the
-   first `1.0.0` release has been validated manually. See `docs-for-agent-ia/maven-central-publishing/maven-central-publishing-opencode.md`.
+2. **Automation (Stage 8)**: `.github/workflows/release.yml` publishes future releases
+   automatically. A tag `vX.Y.Z` (e.g. `v1.0.1`, `v2.0.0`) triggers the workflow, which
+   verifies the tag matches the reactor `<version>` and runs the deploy with `autoPublish`.
+   The `1.0.0` release was published manually first; the workflow is validated with a
+   dry-run trigger before each tag.
 
 ## Prerequisites
 
@@ -59,14 +62,49 @@ defaults:
 mvn -f rate-limit/pom.xml -Ppublish clean deploy -Dcentral.autoPublish=true
 ```
 
-## Local dry run (bundle only, no upload)
+## Local dry run (no upload)
 
 ```bash
 mvn -f rate-limit/pom.xml -Ppublish clean deploy -Dcentral.skipPublishing=true
 ```
 
-Generates the bundle under `target/central-publishing/central-bundle.zip` without uploading
-(it still requires the GPG key to sign).
+Builds and signs the full artifact set (jar, sources, javadoc, POM) without uploading
+anything. Note that in `central-publishing-maven-plugin` `0.11.0` `skipPublishing` skips the
+bundle generation and the upload entirely; to also validate the bundle content use the
+one-command release against the portal with `autoPublish=false` and discard the deployment.
+
+## Automated release — tag-driven (via GitHub Actions)
+
+`.github/workflows/release.yml` releases any new version automatically. Tagging **vX.Y.Z**
+(`v1.0.1`, `v1.1.0`, `v2.0.0`, ...) runs:
+
+```text
+git tag vX.Y.Z  ->  GitHub Actions (environment: production)  ->  mvn -Ppublish clean deploy
+                ->  Maven Central (autoPublish, waits until PUBLISHED)
+```
+
+The workflow guards version safety: if the tag does **not** match the reactor `<version>`
+in `rate-limit/pom.xml`, it fails with `::error` and publishes nothing. Bump the version in
+`rate-limit/pom.xml` (and `examples/pom.xml`) before tagging.
+
+### Secrets (GitHub Environment `production`)
+
+| Secret | Purpose |
+|---|---|
+| `MAVEN_USERNAME` | Central Portal user token username (`settings.xml` server `central`) |
+| `MAVEN_PASSWORD` | Central Portal user token password |
+| `GPG_SIGNING_KEY` | ASCII-armored private key; must be the key already distributed to a Central-supported keyserver |
+| `GPG_PASSPHRASE` | Passphrase of the signing key |
+
+The exported private key must be the same key whose public key is reachable on the PGP
+keyservers Sonatype checks (`keyserver.ubuntu.com`, `keys.openpgp.org`, `pgp.mit.edu`),
+otherwise Central rejects the signatures at validation time.
+
+### Dry-run via the workflow
+
+The workflow has a `workflow_dispatch` trigger with a `dry_run` input: it builds, signs and
+checks everything exactly like a release but skips the upload (no bundle, nothing reaches
+Central).
 
 ## Validating artifacts as an external consumer
 
@@ -91,13 +129,21 @@ For `rate-limit-redis`, also resolve and compile against `io.github.lauto5:rate-
 
 ## Release checklist
 
-- [ ] `mvn -f rate-limit/pom.xml clean verify` — green (unit, integration, concurrency).
-- [ ] `mvn -f examples/pom.xml clean verify` — green against the installed `1.0.0` artifacts.
-- [ ] External consumer resolves and runs against the local `1.0.0` artifacts.
-- [ ] Bundle uploaded and validated via `mvn -Ppublish clean deploy`.
-- [ ] Publish the validated deployment in the Central Portal.
-- [ ] Tag `v1.0.0` (Stage 9) and update `CHANGELOG.md` / release notes.
-- [ ] After the first manual release: enable Stage 8 (`.github/workflows/release.yml`).
+Manual flow (used for `1.0.0`):
+- [x] `mvn -f rate-limit/pom.xml clean verify` — green (unit, integration, concurrency).
+- [x] `mvn -f examples/pom.xml clean verify` — green against the installed artifacts.
+- [x] External consumer resolves and runs against the local artifacts.
+- [x] Bundle uploaded and validated via `mvn -Ppublish clean deploy`.
+- [x] `1.0.0` published on Central (2026-09-08, `autoPublish`).
+
+Automated flow (Stage 8, `.github/workflows/release.yml`):
+- [ ] Export the signing private key (`gpg --armor --export-secret-keys`) and store it in
+      the `production` GitHub Environment as `GPG_SIGNING_KEY` + `GPG_PASSPHRASE`, plus
+      `MAVEN_USERNAME` / `MAVEN_PASSWORD` for the Central Portal token.
+- [ ] Verify the distributed public key is still reachable on the supported PGP keyservers.
+- [ ] Run the workflow `workflow_dispatch` `dry_run` before first tag.
+- [ ] Bump `rate-limit/pom.xml` (and `examples/pom.xml`) version + `CHANGELOG.md`.
+- [ ] Tag `vX.Y.Z` — the workflow validates the version match and publishes to Central.
 
 ## Source of truth
 
