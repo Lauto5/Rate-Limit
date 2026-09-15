@@ -44,11 +44,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17 (temurin)
+      # JDK 21: una unica build de publicacion (sin matriz: no caben dos jobs
+      # firmando/publicando el mismo tag). El bytecode publicado no cambia
+      # (--release 8 / --release 17); el toolchain alinea CI y release.
+      - name: Set up JDK 21 (temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
           cache: maven
 
       - name: Install & prime GPG signing key

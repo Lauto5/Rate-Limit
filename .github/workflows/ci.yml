@@ -6,6 +6,9 @@ on:
       - main
   pull_request:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -48,5 +51,6 @@ jobs:
             rate-limit/rate-limit-core/target/site/jacoco
             rate-limit/rate-limit-inmemory/target/site/jacoco
             rate-limit/rate-limit-redis/target/site/jacoco
+            rate-limit/rate-limit-spring-boot/target/site/jacoco
           if-no-files-found: warn
           retention-days: 14

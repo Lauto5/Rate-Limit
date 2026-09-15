@@ -1,0 +1,7 @@
+rate-limit:
+  enabled: true
+  persistence:
+    type: redis
+    redis:
+      url: ${RATE_LIMIT_REDIS_URL:redis://localhost:6379}
+      namespace: example-app

@@ -49,8 +49,12 @@ Be respectful, constructive, and professional. We are here to build something us
 
 ### Prerequisites
 
-- **Java** The whole project (main and tests) compiles against the Java 8 API via `--release 8`, so a **JDK 9+** is required to build. The produced library runs on **Java 8+**.
-- **Maven** 3.9+ <!-- TODO: Confirm minimum Maven version -->
+- **Java** The core, in-memory and Redis modules compile against the Java 8 API via
+  `--release 8`; the **`rate-limit-spring-boot` module compiles with `--release 17`**. Use a
+  **JDK 17+** to build the whole reactor. The produced library runs on **Java 8+**
+  (core/inmemory/redis) or **Java 17+** (spring-boot).
+- **Maven** 3.9+ (pinned by the Maven Enforcer).
+- **Docker** only for the Redis integration tests (Testcontainers).
 
 ### Terminal Workflow
 
@@ -85,7 +89,9 @@ mvn jacoco:report
 mvn compile exec:java -Dexec.mainClass="com.example.MyMain" -Dexec.args="--arg1 value"
 ```
 
-> The Maven Enforcer pins the build to **JDK 9+** / Maven 3.9+ (the reactor compiles against the Java 8 API with `--release 8`). If `mvn` refuses to run, check `mvn -version`.
+> The Maven Enforcer pins the build to **JDK 17+** (the `rate-limit-spring-boot` module requires
+> Java 17; core modules still compile against the Java 8 API with `--release 8`) and
+> **Maven 3.9+**. If `mvn` refuses to run, check `mvn -version`.
 
 ### Debug Scripts (Python)
 
@@ -112,12 +118,12 @@ python3 run.py test -m redis
 |---|---|
 | `python3 run.py env` | Shows the Java / Maven / Python versions and whether Docker is available |
 | `python3 run.py status` | `git status --short` plus the last 10 commits |
-| `python3 run.py compile` | Compiles the reactor (`core`, `inmemory`, `redis`) and both example projects |
+| `python3 run.py compile` | Compiles the reactor (`core`, `inmemory`, `redis`, `spring-boot`) and all four example projects |
 | `python3 run.py test` | `mvn test` for the whole reactor |
-| `python3 run.py test -m <module>` | Tests a single module (`core`, `inmemory`, or `redis`); builds dependencies with `-am` |
+| `python3 run.py test -m <module>` | Tests a single module (`core`, `inmemory`, `redis`, or `springboot`); builds dependencies with `-am` |
 | `python3 run.py verify` | Full `mvn clean verify` (tests + JaCoCo coverage report) |
 | `python3 run.py install` | Installs the modules into the local Maven repository (skips tests) |
-| `python3 run.py examples` | `mvn clean package` for `examples/core-inmemory` and `examples/core-redis` |
+| `python3 run.py examples` | `mvn clean package -DskipTests` for the four examples (validates they consume the installed artifacts) |
 | `python3 run.py all` | Complete pipeline: `env` → `install` → `examples` → `clean verify` |
 
 Every command prints the exact Maven command it runs. Pass `--dry-run` to preview commands
@@ -137,12 +143,17 @@ The project follows **hexagonal architecture** (ports and adapters):
 
 | Layer | Package | Purpose |
 |---|---|---|
-| **Public API** | `api` | Factory classes (`Algorithm`, `Persistence`) |
+| **Public API** | `api` | Factory classes (`Algorithm`, `RateLimitResult`) |
 | **Application** | `application` | Orchestration, adapters, ports, result mapping, logging (`ConsoleLogger`, `NoOpLogger`) |
 | **Domain** | `domain` | Core logic: algorithms, state, policies, models, codecs |
 | **Infrastructure** | `infrastructure` | Adapters: stores (`InMemoryStore`, `RedisStore`) |
+| **Spring Boot** | `spring` (module `rate-limit-spring-boot`) | Spring auto-configuration: provisions `RateLimitStore` + `Clock` as beans |
 
-When adding a new feature, place it in the correct layer. The domain layer must have **no dependencies** on infrastructure or external frameworks.
+When adding a new feature, place it in the correct layer. The domain layer must have **no dependencies** on infrastructure or external frameworks. The `rate-limit-spring-boot` module depends *on* `core`/adapters and may reference Spring classes — but nothing in `core` may depend on that module.
+
+The Maven reactor maps to these layers: `rate-limit-core` (public API + application + domain),
+`rate-limit-inmemory` / `rate-limit-redis` (infrastructure adapters), `rate-limit-spring-boot`
+(Spring integration).
 
 ---
 
@@ -185,7 +196,11 @@ Open an issue describing:
 
 ### Java
 
-- The reactor compiles against the Java 8 API (`--release 8`): do not use language or API features newer than Java 8 (records, sealed classes, pattern matching, `var`, `List.of`, ...). Build on a JDK 9+ so the `--release 8` flag is available.
+- The `core`, `inmemory` and `redis` modules compile against the Java 8 API (`--release 8`):
+  do not use language or API features newer than Java 8 there (records, sealed classes,
+  pattern matching, `var`, `List.of`, ...). The `rate-limit-spring-boot` module compiles with
+  `--release 17` and may use Java 17 features — but must not introduce APIs newer than Java 17.
+  Build with a JDK 17+ so both target levels work.
 - Use `Optional` for nullable return values in public APIs.
 - Validate inputs at constructor boundaries and throw `IllegalArgumentException` for invalid arguments.
 - Use `java.time` API for all date/time operations. Do not use `System.currentTimeMillis()`.
@@ -217,8 +232,11 @@ Open an issue describing:
 ### Running Tests
 
 ```bash
-mvn test
+mvn -f rate-limit/pom.xml clean verify        # reactor: unit + integration + concurrency + JaCoCo
+mvn -f examples/pom.xml clean verify          # consumer examples (needs docker for the Redis ones)
 ```
+
+The Redis integration tests use Testcontainers and require a running Docker daemon.
 
 ---
 
@@ -260,8 +278,10 @@ Test : adding edge case tests for TokenBucketAlgorithm
 2. **Description:** Explain what the PR does and why. Reference related issues if applicable.
 3. **Scope:** Keep PRs focused. One feature or fix per PR is preferred.
 4. **Tests:** All existing tests must pass. New code must include tests.
-5. **Review:** Be open to feedback and willing to make changes.
-6. **Merge:** The maintainer will merge once the PR is approved and CI passes <!-- TODO: Add CI/CD pipeline status once configured -->.
+5. **CI:** Every PR runs the CI workflow (build + tests on Java 17 and 21). A PR to `main`
+   requires the CI status checks to pass and one approving review; direct pushes to `main`
+   are blocked by branch protection.
+6. **Merge:** Once the PR is approved and CI passes, it is merged to `main`.
 
 ---
 

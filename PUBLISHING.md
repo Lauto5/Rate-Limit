@@ -1,7 +1,8 @@
 # Releasing Rate-Limit to Maven Central
 
 **Status:** `1.0.0` is published and live on Maven Central (`io.github.lauto5:*`),
-released on 2026-09-08 with `-Dcentral.autoPublish=true`.
+released on 2026-09-08 with `-Dcentral.autoPublish=true`. The `rate-limit-spring-boot` module is
+part of the reactor and will be included in the next release.
 
 This document describes the official release pipeline of the library (feature
 `maven-central-publishing`). Releasing is performed in two phases, by design:
@@ -42,10 +43,14 @@ Never commit tokens or signing secrets to the repository.
 ## One-command release
 
 ```bash
+export MAVEN_GPG_PASSPHRASE=<PASSPHRASE>   # used by the maven-gpg-plugin (passphraseEnvName)
 mvn -f rate-limit/pom.xml -Ppublish clean deploy \
-    -Dgpg.keyname=<KEY_ID> \
-    -Dgpg.passphrase=<PASSPHRASE>
+    -Dgpg.keyname=<KEY_ID>
 ```
+
+Do **not** pass `-Dgpg.passphrase=...`: that channel is deprecated and breaks gpg's loopback IPC
+on hosted runners with `Too much data for IPC layer`. Locally you can also rely on your
+`gpg-agent` cache (prime it once with `gpg --sign ...`) and skip the env var.
 
 What `-Ppublish` adds on top of a normal build:
 
@@ -139,6 +144,39 @@ re-upload the public key to the 3 keyservers, and update the repo-level
 release but skips the upload (no bundle, nothing reaches Central) and cannot access the
 Central Portal credentials (no `production` environment).
 
+## Releasing a new version — step by step
+
+1. **Bump the version** in `rate-limit/pom.xml` (the reactor `<version>`) and keep
+   `examples/pom.xml` `dependencyManagement` versions in sync with it. Following the version
+   policy in the contributor docs.
+2. **Update `CHANGELOG.md`** with the new version entry (content moved out of `Unreleased`).
+3. **Validate locally**: `mvn -B -f rate-limit/pom.xml clean verify` and
+   `mvn -B -f examples/pom.xml clean verify` green. This is what CI runs on the PR.
+4. **Open and merge the PR** to `main` (CI + 1 review required by branch protection).
+5. **Run a dry-run release**: `gh workflow run release-dry-run.yml` → green (builds, tests,
+   signs all artifacts, uploads nothing, no production secrets).
+6. **Tag the release** on `main`: `git tag vX.Y.Z && git push origin vX.Y.Z`. The
+   `release.yml` workflow validates that the tag matches the reactor version (SemVer-clean,
+   no SNAPSHOT), otherwise it fails with `::error` and publishes nothing.
+7. **Wait for the workflow** to reach `PUBLISHED` (it deploys with `autoPublish` and
+   `waitUntil=published`). If it fails, see below.
+
+## If a release fails
+
+- **Version validation failed (tag mismatch / SNAPSHOT)**: nothing was published. Fix the tag
+  or the version and re-tag. Delete the bad tag with `git tag -d vX.Y.Z` locally and
+  `git push origin :refs/tags/vX.Y.Z`.
+- **GPG/signing failed**: check the "Install & prime GPG signing key" step. Common causes:
+  expired/mismatched key, wrong `GPG_PASSPHRASE`, public key not reachable on the keyservers
+  Sonatype checks. The workflow fails before uploading anything.
+- **Central rejected the bundle at validation**: the deploy step exits non-zero (the build
+  waits until `published`). Check the Central Portal Deployments page for the rejection reason
+  (bad POM, missing sources/javadoc JAR, signature problem). Fix, then re-tag a corrected
+  version — Central does not allow re-publishing the same version once rejected in a way that
+  requires a new one.
+- **Manual/local release**: run the portal flow with `autoPublish=false` and either link the
+  deployment from the portal UI or discard it.
+
 ## Validating artifacts as an external consumer
 
 After `mvn -f rate-limit/pom.xml install` (or a deploy), verify the artifacts from a project
@@ -176,8 +214,10 @@ Automated flow (Stage 8, `.github/workflows/release.yml`):
 - [x] Verify the distributed public key is still reachable on the supported PGP keyservers.
 - [x] Run the workflow `workflow_dispatch` `release-dry-run.yml` before first tag
       (green, 2026-09-14 local / 2026-09-15 UTC, key `AE4005A75393C9D7`).
-- [ ] Bump `rate-limit/pom.xml` (and `examples/pom.xml`) version + `CHANGELOG.md`.
-- [ ] Tag `vX.Y.Z` — the workflow validates the version match and publishes to Central.
+- [ ] Bump `rate-limit/pom.xml` reactor version (and keep `examples/pom.xml` in sync) +
+      `CHANGELOG.md`. Includes the `rate-limit-spring-boot` module in the bundle.
+- [ ] Tag `vX.Y.Z` — the workflow validates the version match and publishes to Central
+      (all four modules: core, inmemory, redis, spring-boot).
 
 ## Source of truth
 

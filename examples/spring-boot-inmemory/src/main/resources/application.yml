@@ -1,0 +1,4 @@
+rate-limit:
+  enabled: true
+  persistence:
+    type: inmemory

@@ -81,11 +81,20 @@ The core depends only on abstractions (interfaces) and never on concrete technol
           | inmemory         |  | Infrastructure:        |  | standalone apps   |
           | infrastructure/  |  |  LettuceTransaction    |  +-------------------+
           |  InMemoryStore   |  |  RedisStore            |
-          +------------------+  |  RedisTransactionPort  |
-                                +------------------------+
+          +------------------+  |  RedisTransactionPort  |  +-------------------+
+                                +------------------------+  | rate-limit-      |
+                                                          | spring-boot       |
+                                                          | Spring beans      |
+                                                          +-------------------+
 ```
 
-The Maven reactor mirrors this separation: `rate-limit-core` holds the API, application and domain layers; `rate-limit-inmemory` and `rate-limit-redis` are separate modules holding only infrastructure adapters. The dependency direction always points **inward**: infrastructure modules depend on the core and implement its ports, the application layer depends on ports, and the domain core depends on nothing.
+The Maven reactor mirrors this separation: `rate-limit-core` holds the API, application and
+domain layers; `rate-limit-inmemory` and `rate-limit-redis` are separate modules holding only
+infrastructure adapters; `rate-limit-spring-boot` depends on core (and, optionally, on the
+adapters) to expose them as Spring beans. The dependency direction always points **inward**:
+infrastructure modules depend on the core and implement its ports, the application layer
+depends on ports, and the domain core depends on nothing — including Spring (see
+[Why Spring does not enter `core`](#why-spring-does-not-enter-core)).
 
 ---
 
@@ -384,37 +393,56 @@ concurrent operations** (limit 100) and asserts `allowed <= limit` under real co
 
 ---
 
-## Phase 3 -- Final review and merge decision
+## Spring Boot integration
 
-Closing audit of the feature: every reviewed area was classified
-(🔴 fix / 🟠 adjust / 🟡 document / 🟢 validated):
+The `rate-limit-spring-boot` module is a thin **auto-configuration**, not a starter: it
+provisions a `RateLimitStore` (in-memory or Redis, per `application.yml`) and a `java.time.Clock`
+as Spring beans (`@ConditionalOnMissingBean`, so a user bean always wins). It deliberately does
+**not** create `RateLimit` beans or select an algorithm: the algorithm and the policy are core
+concerns and stay a consumer decision, preserving the strongly typed API.
 
-| Audited area | Classification | Justification |
-|---|---|---|
-| `RedisStore` (retries, backoff, TTL, namespace, validation) | 🟢 | Bounded `MAX_RETRIES=25`, backoff 0..64 ms with restored interruption, TTL with a 1 ms floor, namespaced keys, validated identifier; covered by `RedisStoreUnitTest`. |
-| `LettuceTransactionPort` (connection cleanup, pool, conflict vs infra) | 🟢 | Best-effort `DISCARD`/`UNWATCH` before returning to the pool; `WATCH` conflicts return `null`, infrastructure errors propagate; connection reusable after a body failure. |
-| Real concurrency | 🟢 | `LettuceTransactionPortIntegrationTest$ConcurrencyCases` (barrier), 20 threads in `RedisStoreUnitTest`, 1000 operations over one key in `StoreContractTest`. |
-| WATCH/MULTI/EXEC vs infrastructure errors | 🟢 | `infraErrorShouldPropagateWithoutRetrying`, `maxRetriesShouldBeExhaustedOnPersistentConflict`. |
-| TTL / expiration | 🟢 | Invariant `StoreState.expiresAt` = metadata; Redis uses `PEXPIRE`, InMemory uses `isExpired` on read; the contract test confirms identical decisions. |
-| State corruption (fail-open/fail-closed) | 🟠 → 🟢 | Policy documented and fully covered: any undecodable payload (even with a valid header) is normalized to `CorruptedStateException` and the store rewrites it from scratch. |
-| Maven dependencies | 🟠 → 🟢 | Direction `inmemory/redis -> core` respected; the dead `slf4j-simple` entry was removed from the parent's `dependencyManagement`. The consumer chooses their SLF4J provider. |
-| Public API | 🟡 | `api/`, `Persistence` and policies form the supported surface. `application`/`infrastructure` classes are public for package cohesion; sealing them is future work (`feature/api-v2`). |
-| Integration tests | 🟢 | Testcontainers (`redis:7-alpine`) in integration and contract tests between `InMemoryStore` and `RedisStore`. |
-| Java 8 (runtime) vs build JDK | 🟢 | `--release 8` + enforcer `[9,)`; policy documented in README. |
-| Documentation | 🟢 | README, ARCHITECTURE.md and CONTRIBUTING.md up to date. |
+```
+Spring Boot (rate-limit-spring-boot)
+    │  provisions
+    ├── Clock
+    ├── RateLimitStore (InMemory | Redis)
+    ▼
+Consumer code
+    │
+    └── RateLimit.build(algorithm, store)   ← typed, from core
+```
 
-Documented decisions that remain **explicitly outside this branch** (future features):
+Module layout: `autoconfigure.RateLimitAutoConfiguration` (with inner
+`InMemoryRateLimitConfiguration` / `RedisRateLimitConfiguration`, each guarded by
+`@ConditionalOnClass` on its adapter so a missing adapter means "no bean", not a crash) and the
+`spring.properties` configuration properties (`rate-limit.*`). The Redis bean is declared with
+`destroyMethod="close"` so the Lettuce pool is closed at context shutdown.
 
-- `feature/redis-hardening` -- fixed connection pool (`maxTotal=8`, indefinite blocking when exhausted) is not configurable; make it configurable and measure queue latency.
-- `feature/inmemory-eviction` -- `InMemoryStore` does not evict expired entries; map growth is bounded for arbitrary identifiers.
-- `feature/api-v2` -- seal the internal `application`/`infrastructure` classes and reduce the double surface of `RateLimitResult` (constructor + factories).
+## Why Spring does not enter `core`
+
+`rate-limit-core` depends on nothing but the JDK. Keeping Spring in its own module means:
+
+- the domain, algorithms and policies remain framework-agnostic and testable in isolation
+  (plain JUnit, no context);
+- other integrations (Micronaut, Quarkus, plain DI) can reuse the identical core without
+  dragging Spring onto their classpath;
+- `core` has no transitive Spring dependency, so its footprint stays minimal.
+
+The dependency rule is one-directional: `rate-limit-spring-boot` depends on `core` and on the
+adapter modules. Nothing in `core` (or in `inmemory`/`redis`) references Spring.
+
+## Explicitly out of scope
+
+Known limitations and deliberate non-goals, tracked as future work:
+
+- `feature/redis-hardening` -- the fixed connection pool (`maxTotal=8`, indefinite blocking
+  when exhausted) is not configurable; make it configurable and measure queue latency.
+- `feature/inmemory-eviction` -- `InMemoryStore` does not evict expired entries; map growth is
+  bounded for arbitrary identifiers.
+- `feature/api-v2` -- seal the internal `application`/`infrastructure` classes and reduce the
+  double surface of `RateLimitResult` (constructor + factories).
 - `feature/redis-lua-atomic-operations` -- Lua scripts replacing WATCH/MULTI/EXEC.
 - `feature/observability` -- Micrometer / metrics for conflicts, retries and latency.
-- `feature/spring-boot-integration` -- autoconfiguration for Spring Boot.
-
-**Decision:** the feature is ready to merge to `main`. Every point of the phase 3
-criterion is met: no pending `🔴`, `🟠` resolved (with tests), `🟡` documented, `🟢`
-validated, full suite green (231 tests) and the Java 8 / build JDK policy documented.
 
 ---
 
