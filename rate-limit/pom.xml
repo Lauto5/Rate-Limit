@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.github.lauto5</groupId>
 	<artifactId>rate-limit</artifactId>
-	<version>1.0.1</version>
+	<version>1.1.0</version>
 	<packaging>pom</packaging>
 	<name>rate limit</name>
 	<description>Lightweight extensible rate limiting library for Java built on hexagonal architecture.</description>

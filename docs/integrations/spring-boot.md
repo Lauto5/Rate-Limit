@@ -44,17 +44,17 @@ Two explicit decisions:
 <dependency>
     <groupId>io.github.lauto5</groupId>
     <artifactId>rate-limit-core</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 </dependency>
 <dependency>
     <groupId>io.github.lauto5</groupId>
     <artifactId>rate-limit-inmemory</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 </dependency>
 <dependency>
     <groupId>io.github.lauto5</groupId>
     <artifactId>rate-limit-spring-boot</artifactId>
-    <version>1.0.1</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 

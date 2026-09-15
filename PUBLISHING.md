@@ -186,26 +186,26 @@ After `mvn -f rate-limit/pom.xml install` (or a deploy), verify the artifacts fr
 <dependency>
     <groupId>io.github.lauto5</groupId>
     <artifactId>rate-limit-core</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 </dependency>
 <dependency>
     <groupId>io.github.lauto5</groupId>
     <artifactId>rate-limit-inmemory</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 
-For `rate-limit-redis`, also resolve and compile against `io.github.lauto5:rate-limit-redis:1.0.0`
+For `rate-limit-redis`, also resolve and compile against `io.github.lauto5:rate-limit-redis:1.1.0`
 (executing rate-limit operations requires a live Redis).
 
 ## Release checklist
 
-Manual flow (used for `1.0.0`):
+Manual flow (used for `1.1.0`):
 - [x] `mvn -f rate-limit/pom.xml clean verify` — green (unit, integration, concurrency).
 - [x] `mvn -f examples/pom.xml clean verify` — green against the installed artifacts.
 - [x] External consumer resolves and runs against the local artifacts.
 - [x] Bundle uploaded and validated via `mvn -Ppublish clean deploy`.
-- [x] `1.0.0` published on Central (2026-09-08, `autoPublish`).
+- [x] `1.1.0` published on Central (2026-09-15, `autoPublish`).
 
 Automated flow (Stage 8, `.github/workflows/release.yml`):
 - [x] Export the signing private key (`gpg --armor --export-secret-keys`) and store it in

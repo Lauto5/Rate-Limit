@@ -61,12 +61,12 @@ Maven Central, with a persistence module of your choice:
 <dependency>
     <groupId>io.github.lauto5</groupId>
     <artifactId>rate-limit-core</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 </dependency>
 <dependency>
     <groupId>io.github.lauto5</groupId>
     <artifactId>rate-limit-inmemory</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 

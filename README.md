@@ -1,6 +1,6 @@
 # Rate Limit
 
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.lauto5/rate-limit-core.svg)](https://central.sonatype.com/artifact/io.github.lauto5/rate-limit-core/1.0.0)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.lauto5/rate-limit-core.svg)](https://central.sonatype.com/artifact/io.github.lauto5/rate-limit-core/1.1.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Java](https://img.shields.io/badge/Java-8+-blue.svg)](https://www.oracle.com/java/)
 
@@ -85,7 +85,7 @@ Each algorithm has its own tutorial under [docs/algorithms](docs/algorithms/READ
 
 ## Installation
 
-The `1.0.x` artifacts are **published on Maven Central** (`io.github.lauto5`). Add
+The `1.1.x` artifacts are **published on Maven Central** (`io.github.lauto5`). Add
 `rate-limit-core` plus the persistence module you need. The Spring Boot module ships with the
 project's next release (see [PUBLISHING.md](PUBLISHING.md)).
 
@@ -95,12 +95,12 @@ project's next release (see [PUBLISHING.md](PUBLISHING.md)).
 <dependency>
     <groupId>io.github.lauto5</groupId>
     <artifactId>rate-limit-core</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 </dependency>
 <dependency>
     <groupId>io.github.lauto5</groupId>
     <artifactId>rate-limit-inmemory</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 
@@ -110,12 +110,12 @@ project's next release (see [PUBLISHING.md](PUBLISHING.md)).
 <dependency>
     <groupId>io.github.lauto5</groupId>
     <artifactId>rate-limit-core</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 </dependency>
 <dependency>
     <groupId>io.github.lauto5</groupId>
     <artifactId>rate-limit-redis</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 
@@ -128,17 +128,17 @@ project's next release (see [PUBLISHING.md](PUBLISHING.md)).
 <dependency>
     <groupId>io.github.lauto5</groupId>
     <artifactId>rate-limit-core</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 </dependency>
 <dependency>
     <groupId>io.github.lauto5</groupId>
     <artifactId>rate-limit-inmemory</artifactId>   <!-- or rate-limit-redis -->
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 </dependency>
 <dependency>
     <groupId>io.github.lauto5</groupId>
     <artifactId>rate-limit-spring-boot</artifactId>
-    <version>1.0.1</version>   <!-- published with the next Central release -->
+    <version>1.1.0</version>
 </dependency>
 ```
 
