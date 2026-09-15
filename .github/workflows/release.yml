@@ -49,53 +49,52 @@ jobs:
           distribution: temurin
           java-version: 17
           cache: maven
-          # Import the private key only. The passphrase is delivered to the gpg
-          # agent directly (see "Install & prime GPG agent"), never to the
-          # maven-gpg-plugin (the gpg.*passphrase* paths are deprecated and fail
-          # on hosted runners with "Too much data for IPC layer").
-          gpg-private-key: ${{ secrets.GPG_SIGNING_KEY }}
 
-      - name: Resolve GPG signing key id
-        id: gpg-keyid
+      - name: Install & prime GPG signing key
+        id: gpg-prime
+        env:
+          # NOTE: these secrets are only ever written to the isolated GNUPGHOME
+          # file. Never print them.
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_SIGNING_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
+          set -euo pipefail
+          GNUPGHOME="$RUNNER_TEMP/gpg-home"
+          rm -rf "$GNUPGHOME"
+          mkdir -p -m 700 "$GNUPGHOME"
+          export GNUPGHOME
+
+          # Import FIRST: gpg 2.4's secret-key import self-checks the key and
+          # would try to unlock it; with pinentry-mode loopback active it then
+          # fails in --batch mode ("can't get input").
+          printf '%s\n' "$GPG_PRIVATE_KEY" | gpg --batch --yes --import
+
+          printf '%s\n' 'pinentry-mode loopback' > "$GNUPGHOME/gpg.conf"
+          printf '%s\n' \
+            'allow-loopback-pinentry' \
+            'default-cache-ttl 3600' \
+            'max-cache-ttl 7200' > "$GNUPGHOME/gpg-agent.conf"
+
           KEYID=$(gpg --batch --with-colons --list-secret-keys 2>/dev/null \
             | awk -F: '/^(sec|ssb)/{print $5; exit}')
           if [ -z "$KEYID" ]; then
             echo "::error::No secret GPG key found. Check the GPG_SIGNING_KEY secret."
             exit 1
           fi
+
+          # Prime the agent's cache with the passphrase. If the passphrase is
+          # wrong this step fails loudly instead of surfacing deep in Maven.
+          echo -n scratch > "$RUNNER_TEMP/gpg-prime.bin"
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" \
+            --local-user "$KEYID" --output "$RUNNER_TEMP/gpg-prime.sig" \
+            --detach-sign "$RUNNER_TEMP/gpg-prime.bin"
+          gpg --verify "$RUNNER_TEMP/gpg-prime.sig" "$RUNNER_TEMP/gpg-prime.bin"
+
           echo "keyid=$KEYID"
           echo "keyid=$KEYID" >> "$GITHUB_OUTPUT"
-
-      - name: Install & prime GPG agent
-        id: gpg-prime
-        env:
-          KEYID: ${{ steps.gpg-keyid.outputs.keyid }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        run: |
-          # Deliver the passphrase to the gpg agent up front and cache it for the
-          # whole build. maven-gpg-plugin then signs WITHOUT a passphrase (the
-          # agent serves it from its cache), which avoids the "--pinentry-mode
-          # loopback + passphrase over IPC" path that fails on hosted runners
-          # ("gpg: signing failed: Too much data for IPC layer").
-          mkdir -p "$HOME/.gnupg"
-          chmod 700 "$HOME/.gnupg"
-          printf '%s\n' 'pinentry-mode loopback' > "$HOME/.gnupg/gpg.conf"
-          printf '%s\n' \
-            'allow-loopback-pinentry' \
-            'default-cache-ttl 3600' \
-            'max-cache-ttl 7200' >> "$HOME/.gnupg/gpg-agent.conf"
-          gpgconf --reload gpg-agent
-
-          # Prime: sign a scratch file so the agent keeps the passphrase cached.
-          echo -n scratch > /tmp/gpg-prime.bin
-          gpg --batch --yes --pinentry-mode loopback \
-            --passphrase "$GPG_PASSPHRASE" \
-            --local-user "$KEYID" \
-            --output /tmp/gpg-prime.sig --detach-sign /tmp/gpg-prime.bin 2>&1 \
-            | sed 's/^/gpg-prime: /'
-          gpg --verify /tmp/gpg-prime.sig /tmp/gpg-prime.bin 2>&1 \
-            | sed 's/^/gpg-prime: /'
+          # Reuse this isolated home in every later step (Maven signs against it
+          # without any passphrase: the agent serves it from its cache).
+          echo "GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
 
       - name: Create Maven settings with Central credentials
         run: |
@@ -156,7 +155,8 @@ jobs:
               -Dcentral.autoPublish=true -Dcentral.waitUntil=published
           fi
         env:
-          KEYID: ${{ steps.gpg-keyid.outputs.keyid }}
-          # No GPG passphrase here: the agent was primed above and serves it from
-          # its cache while signing (gpg-agent.conf caches it for up to 7200s).
+          KEYID: ${{ steps.gpg-prime.outputs.keyid }}
+          # No GPG passphrase here: Maven signs against the isolated GNUPGHOME
+          # whose agent (primed above) serves the passphrase from its cache.
+          # GNUPGHOME itself is set for every step via GITHUB_ENV.
           GITHUB_REF_NAME: ${{ github.ref_name }}
