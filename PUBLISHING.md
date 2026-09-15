@@ -100,6 +100,23 @@ The exported private key must be the same key whose public key is reachable on t
 keyservers Sonatype checks (`keyserver.ubuntu.com`, `keys.openpgp.org`, `pgp.mit.edu`),
 otherwise Central rejects the signatures at validation time.
 
+`GPG_PASSPHRASE` must be the real (short) passphrase of the signing key. A large value
+(e.g. the armored key pasted by mistake) breaks gpg's loopback IPC with
+`gpg: signing failed: Too much data for IPC layer`.
+
+### GPG signing inside the workflow
+
+The workflow imports the private key into an **isolated** `GNUPGHOME` (`$RUNNER_TEMP/gpg-home`)
+and **primes the gpg-agent**: a scratch file is signed once with the passphrase so the agent
+keeps it cached, and Maven then signs without any passphrase flag (the `maven-gpg-plugin`
+passphrase channels are deprecated and fail on hosted runners). The key id is resolved
+dynamically; nothing is hardcoded.
+
+**Current signing key:** `AE4005A75393C9D7` (RSA-4096, uid `lautaro nahuel ponce
+<lauto5dev@gmail.com>`, distributed on the 3 keyservers). On key rotation: regenerate,
+re-upload the public key to the 3 keyservers, and update `GPG_SIGNING_KEY` / `GPG_PASSPHRASE`
+in the `production` environment.
+
 ### Dry-run via the workflow
 
 The workflow has a `workflow_dispatch` trigger with a `dry_run` input: it builds, signs and
@@ -137,11 +154,11 @@ Manual flow (used for `1.0.0`):
 - [x] `1.0.0` published on Central (2026-09-08, `autoPublish`).
 
 Automated flow (Stage 8, `.github/workflows/release.yml`):
-- [ ] Export the signing private key (`gpg --armor --export-secret-keys`) and store it in
+- [x] Export the signing private key (`gpg --armor --export-secret-keys`) and store it in
       the `production` GitHub Environment as `GPG_SIGNING_KEY` + `GPG_PASSPHRASE`, plus
       `MAVEN_USERNAME` / `MAVEN_PASSWORD` for the Central Portal token.
-- [ ] Verify the distributed public key is still reachable on the supported PGP keyservers.
-- [ ] Run the workflow `workflow_dispatch` `dry_run` before first tag.
+- [x] Verify the distributed public key is still reachable on the supported PGP keyservers.
+- [x] Run the workflow `workflow_dispatch` `dry_run` before first tag (green, 2026-09-15).
 - [ ] Bump `rate-limit/pom.xml` (and `examples/pom.xml`) version + `CHANGELOG.md`.
 - [ ] Tag `vX.Y.Z` — the workflow validates the version match and publishes to Central.
 
