@@ -1,0 +1,140 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>io.github.lauto5</groupId>
+		<artifactId>rate-limit</artifactId>
+		<version>1.0.1</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+	<artifactId>rate-limit-spring-boot</artifactId>
+	<name>rate limit spring boot</name>
+	<description>Spring Boot integration: auto-configuration and beans that provision persistence for the core rate limiting API.</description>
+
+	<!-- Esta integracion requiere Java 17+, no afecta el contrato del core. -->
+	<properties>
+		<maven.compiler.release>17</maven.compiler.release>
+		<required.java.version>[17,)</required.java.version>
+		<spring.boot.version>3.5.16</spring.boot.version>
+		<!-- Junite Jupiter alineado con el JUnit Platform 1.12.x que gestiona el BOM de
+		     Spring Boot (el parent fija 5.10.2, incompatible con platform 1.12.x). -->
+		<junit.jupiter.version>5.12.2</junit.jupiter.version>
+	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+
+			<!-- BOM oficial de Spring Boot 3.x (gestiona autoconfigure/test) -->
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-dependencies</artifactId>
+				<version>${spring.boot.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+
+			<!-- Modulos del proyecto no gestionados por el POM padre -->
+			<dependency>
+				<groupId>io.github.lauto5</groupId>
+				<artifactId>rate-limit-redis</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>io.github.lauto5</groupId>
+				<artifactId>rate-limit-spring-boot</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+		</dependencies>
+	</dependencyManagement>
+
+	<dependencies>
+
+		<!-- Modulos del proyecto: core obligatorio; los adapters de persistencia
+		     son opcionales para que el consumidor elija (inmemory o redis). -->
+		<dependency>
+			<groupId>io.github.lauto5</groupId>
+			<artifactId>rate-limit-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.github.lauto5</groupId>
+			<artifactId>rate-limit-inmemory</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>io.github.lauto5</groupId>
+			<artifactId>rate-limit-redis</artifactId>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- Auto-configuracion de Spring Boot -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-autoconfigure</artifactId>
+		</dependency>
+
+		<!-- Test: ApplicationContextRunner y soporte de auto-configuracion en tests -->
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-api</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-test-autoconfigure</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.assertj</groupId>
+			<artifactId>assertj-core</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+	</dependencies>
+
+	<build>
+		<plugins>
+
+			<!-- Sources JAR requerido por Central -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar-no-fork</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- Javadoc JAR requerido por Central -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+		</plugins>
+	</build>
+
+</project>

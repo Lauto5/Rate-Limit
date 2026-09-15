@@ -36,6 +36,7 @@
 		<module>rate-limit-core</module>
 		<module>rate-limit-inmemory</module>
 		<module>rate-limit-redis</module>
+		<module>rate-limit-spring-boot</module>
 	</modules>
 
 	<properties>
