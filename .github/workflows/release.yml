@@ -5,27 +5,28 @@ name: Release
 # A tag `vX.Y.Z` (e.g. v1.0.1, v1.1.0, v2.0.0) triggers the pipeline:
 #   git tag -> GitHub Actions -> mvn -Ppublish clean deploy -> Maven Central
 #
-# Required secrets in the GitHub Environment "production":
-#   MAVEN_USERNAME   Central Portal user token username
-#   MAVEN_PASSWORD   Central Portal user token password
-#   GPG_SIGNING_KEY  ASCII-armored private key (same key distributed to the
-#                    PGP keyservers supported by Central, e.g. keyserver.ubuntu.com)
-#   GPG_PASSPHRASE   passphrase of the signing key (used once, to prime the gpg
-#                    agent; signing itself happens via the agent's cache)
+# This workflow ONLY runs on real release tags. Dry runs live in the separate
+# 'release-dry-run.yml' workflow (workflow_dispatch, no production access).
 #
-# The version guard ensures the reactor <version> matches the tag (no SNAPSHOTs,
-# no "forgetting to bump"). Nothing is published when they do not match.
+# Secrets:
+#   Repo-level (available to CI + dry-run + release):
+#     GPG_SIGNING_KEY  ASCII-armored private key (public key distributed to the
+#                      PGP keyservers supported by Central, e.g. keyserver.ubuntu.com)
+#     GPG_PASSPHRASE   passphrase of the signing key (used once, to prime the gpg
+#                      agent; signing itself happens via the agent's cache)
+#   GitHub Environment "production" (release only, least privilege):
+#     MAVEN_USERNAME   Central Portal user token username
+#     MAVEN_PASSWORD   Central Portal user token password
+#
+# The version guard enforces SemVer and a strict tag == reactor <version> match
+# (no SNAPSHOTs, no "forgetting to bump"). Nothing is published on a mismatch.
 
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
-  workflow_dispatch:
-    inputs:
-      dry_run:
-        description: 'Build + sign + bundle but do NOT upload to Central (dry run)'
-        type: boolean
-        default: false
+      # GitHub filter globs are NOT regex. This is intentionally broad
+      # (vANY.ANY.ANY); strict SemVer validation lives in the workflow.
+      - 'v*.*.*'
 
 permissions:
   contents: read
@@ -125,35 +126,36 @@ jobs:
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          VERSION=$(python3 - "$TAG" <<'PY' 2>/dev/null || true
-          import os, sys, xml.etree.ElementTree as ET
+          # Tag must be exactly vMAJOR.MINOR.PATCH (SemVer-clean, no SNAPSHOT).
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag '$TAG' is not a vMAJOR.MINOR.PATCH tag. Nothing was published."
+            exit 1
+          fi
+          VERSION=$(python3 - <<'PY'
+          import xml.etree.ElementTree as ET
           root = ET.parse('rate-limit/pom.xml').getroot()
           ns = {'m': 'http://maven.apache.org/POM/4.0.0'}
           print(root.find('m:version', ns).text)
           PY
+          )
+          if [[ "$VERSION" == *SNAPSHOT* ]]; then
+            echo "::error::The reactor version '$VERSION' is a SNAPSHOT; a release tag must point to a non-SNAPSHOT version. Nothing was published."
+            exit 1
+          fi
           EXPECTED="${TAG#v}"
           if [ "$VERSION" != "$EXPECTED" ]; then
             echo "::error::Tag '$TAG' does not match the reactor version '$VERSION'. Bump the version in rate-limit/pom.xml before tagging the release."
             echo "::error::Expected '$EXPECTED'; found '$VERSION'. Nothing was published."
             exit 1
           fi
-          echo "Tag '$TAG' matches reactor version '$VERSION'."
+          echo "Tag '$TAG' matches reactor version '$VERSION' (ok)."
 
       - name: Deploy to Maven Central
         run: |
-          if [ "${{ inputs.dry_run }}" = "true" ]; then
-            # Build, sign and validate the full pipeline WITHOUT uploading to Central
-            # (central-publishing 0.11.0 skips the bundle + upload entirely here).
-            echo "== DRY RUN: building and signing everything, upload skipped =="
-            mvn -B -f rate-limit/pom.xml -Ppublish clean deploy \
-              -Dgpg.keyname="$KEYID" \
-              -Dcentral.skipPublishing=true
-          else
-            echo "== Publishing $GITHUB_REF_NAME (auto-publish, wait until PUBLISHED) =="
-            mvn -B -f rate-limit/pom.xml -Ppublish clean deploy \
-              -Dgpg.keyname="$KEYID" \
-              -Dcentral.autoPublish=true -Dcentral.waitUntil=published
-          fi
+          echo "== Publishing $GITHUB_REF_NAME (auto-publish, wait until PUBLISHED) =="
+          mvn -B -f rate-limit/pom.xml -Ppublish clean deploy \
+            -Dgpg.keyname="$KEYID" \
+            -Dcentral.autoPublish=true -Dcentral.waitUntil=published
         env:
           KEYID: ${{ steps.gpg-prime.outputs.keyid }}
           # No GPG passphrase here: Maven signs against the isolated GNUPGHOME

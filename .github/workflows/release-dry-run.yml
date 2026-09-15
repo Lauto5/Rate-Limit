@@ -1,0 +1,115 @@
+name: Release (dry run)
+
+# Builds, tests, signs and verifies the FULL release pipeline WITHOUT touching
+# Maven Central and WITHOUT any production access.
+#
+# Deliberately NOT attached to the "production" GitHub Environment: this job is
+# reachable on demand (workflow_dispatch), so it must not receive the Central
+# Portal credentials. It only reads the repo-level GPG secrets that signing needs.
+#
+# Repo-level secrets used:
+#   GPG_SIGNING_KEY  ASCII-armored private signing key
+#   GPG_PASSPHRASE   passphrase of the signing key (used once, to prime gpg-agent)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-dry-run
+  cancel-in-progress: true
+
+jobs:
+  dry-run:
+    name: Dry run (sign everything, upload nothing)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - name: Install & prime GPG signing key
+        id: gpg-prime
+        env:
+          # NOTE: these secrets are only ever written to the isolated GNUPGHOME
+          # file. Never print them.
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_SIGNING_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          GNUPGHOME="$RUNNER_TEMP/gpg-home"
+          rm -rf "$GNUPGHOME"
+          mkdir -p -m 700 "$GNUPGHOME"
+          export GNUPGHOME
+
+          # Import FIRST: gpg 2.4's secret-key import self-checks the key and
+          # would try to unlock it; with pinentry-mode loopback active it then
+          # fails in --batch mode ("can't get input").
+          printf '%s\n' "$GPG_PRIVATE_KEY" | gpg --batch --yes --import
+
+          printf '%s\n' 'pinentry-mode loopback' > "$GNUPGHOME/gpg.conf"
+          printf '%s\n' \
+            'allow-loopback-pinentry' \
+            'default-cache-ttl 3600' \
+            'max-cache-ttl 7200' > "$GNUPGHOME/gpg-agent.conf"
+
+          KEYID=$(gpg --batch --with-colons --list-secret-keys 2>/dev/null \
+            | awk -F: '/^(sec|ssb)/{print $5; exit}')
+          if [ -z "$KEYID" ]; then
+            echo "::error::No secret GPG key found. Check the GPG_SIGNING_KEY secret."
+            exit 1
+          fi
+
+          # Prime the agent's cache with the passphrase. If the passphrase is
+          # wrong this step fails loudly instead of surfacing deep in Maven.
+          echo -n scratch > "$RUNNER_TEMP/gpg-prime.bin"
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" \
+            --local-user "$KEYID" --output "$RUNNER_TEMP/gpg-prime.sig" \
+            --detach-sign "$RUNNER_TEMP/gpg-prime.bin"
+          gpg --verify "$RUNNER_TEMP/gpg-prime.sig" "$RUNNER_TEMP/gpg-prime.bin"
+
+          echo "keyid=$KEYID"
+          echo "keyid=$KEYID" >> "$GITHUB_OUTPUT"
+          # Reuse this isolated home in every later step (Maven signs against it
+          # without any passphrase: the agent serves it from its cache).
+          echo "GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
+
+      - name: Create Maven settings (placeholder Central server)
+        run: |
+          # The central-publishing plugin still validates the "central" server entry
+          # (and a valid userId) even when skipPublishing skips the upload. These are
+          # non-functional placeholders: this job never holds the real Portal token.
+          mkdir -p "$HOME/.m2"
+          cat > "$HOME/.m2/settings.xml" <<'EOF'
+          <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+            <servers>
+              <server>
+                <id>central</id>
+                <username>dry-run</username>
+                <password>dry-run</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
+
+      - name: Dry-run build, sign and verify
+        run: |
+          # skips the upload: central-publishing 0.11.0 with skipPublishing also
+          # skips the bundle generation, so nothing leaves the runner and the
+          # placeholder credentials are never used against the portal.
+          echo "== DRY RUN: building and signing everything, upload skipped =="
+          mvn -B -f rate-limit/pom.xml -Ppublish clean deploy \
+            -Dgpg.keyname="$KEYID" \
+            -Dcentral.skipPublishing=true
+        env:
+          KEYID: ${{ steps.gpg-prime.outputs.keyid }}

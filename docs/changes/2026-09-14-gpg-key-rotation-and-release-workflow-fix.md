@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Date** | 2026-09-15 |
+| **Date** | 2026-09-14 (local; 2026-09-15 UTC) |
 | **Type** | Fix |
 | **Module(s)** | CI (`.github/workflows/release.yml`), GitHub Environment `production`, `PUBLISHING.md` |
 | **Status** | Merged (commit en `main`) |

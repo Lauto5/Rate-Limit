@@ -75,26 +75,42 @@ one-command release against the portal with `autoPublish=false` and discard the 
 
 ## Automated release — tag-driven (via GitHub Actions)
 
-`.github/workflows/release.yml` releases any new version automatically. Tagging **vX.Y.Z**
-(`v1.0.1`, `v1.1.0`, `v2.0.0`, ...) runs:
+Two workflows, separated by least privilege:
 
-```text
-git tag vX.Y.Z  ->  GitHub Actions (environment: production)  ->  mvn -Ppublish clean deploy
-                ->  Maven Central (autoPublish, waits until PUBLISHED)
-```
+- **`.github/workflows/release.yml`** — tag-driven, real publishes. Tagging **vX.Y.Z**
+  (`v1.0.1`, `v1.1.0`, `v2.0.0`, ...) runs:
 
-The workflow guards version safety: if the tag does **not** match the reactor `<version>`
-in `rate-limit/pom.xml`, it fails with `::error` and publishes nothing. Bump the version in
+  ```text
+  git tag vX.Y.Z  ->  GitHub Actions (environment: production)  ->  mvn -Ppublish clean deploy
+                  ->  Maven Central (autoPublish, waits until PUBLISHED)
+  ```
+
+- **`.github/workflows/release-dry-run.yml`** — `workflow_dispatch`, builds + signs +
+  verifies the full pipeline **without** the `production` environment (no Central token
+  available, `-Dcentral.skipPublishing=true`, nothing leaves the runner).
+
+The release workflow guards version safety: the tag must be exactly `vMAJOR.MINOR.PATCH`
+(SemVer-clean, no SNAPSHOT) and match the reactor `<version>` in `rate-limit/pom.xml`;
+otherwise it fails with `::error` and publishes nothing. Bump the version in
 `rate-limit/pom.xml` (and `examples/pom.xml`) before tagging.
 
-### Secrets (GitHub Environment `production`)
+### Secrets
+
+Split by scope so a dry-run never sees production credentials:
+
+**Repo-level** (needed by CI, dry-run and release for signing):
+
+| Secret | Purpose |
+|---|---|
+| `GPG_SIGNING_KEY` | ASCII-armored private key; must be the key already distributed to a Central-supported keyserver |
+| `GPG_PASSPHRASE` | Passphrase of the signing key |
+
+**GitHub Environment `production`** (release only):
 
 | Secret | Purpose |
 |---|---|
 | `MAVEN_USERNAME` | Central Portal user token username (`settings.xml` server `central`) |
 | `MAVEN_PASSWORD` | Central Portal user token password |
-| `GPG_SIGNING_KEY` | ASCII-armored private key; must be the key already distributed to a Central-supported keyserver |
-| `GPG_PASSPHRASE` | Passphrase of the signing key |
 
 The exported private key must be the same key whose public key is reachable on the PGP
 keyservers Sonatype checks (`keyserver.ubuntu.com`, `keys.openpgp.org`, `pgp.mit.edu`),
@@ -114,14 +130,14 @@ dynamically; nothing is hardcoded.
 
 **Current signing key:** `AE4005A75393C9D7` (RSA-4096, uid `lautaro nahuel ponce
 <lauto5dev@gmail.com>`, distributed on the 3 keyservers). On key rotation: regenerate,
-re-upload the public key to the 3 keyservers, and update `GPG_SIGNING_KEY` / `GPG_PASSPHRASE`
-in the `production` environment.
+re-upload the public key to the 3 keyservers, and update the repo-level
+`GPG_SIGNING_KEY` / `GPG_PASSPHRASE` secrets.
 
-### Dry-run via the workflow
+### Dry-run
 
-The workflow has a `workflow_dispatch` trigger with a `dry_run` input: it builds, signs and
-checks everything exactly like a release but skips the upload (no bundle, nothing reaches
-Central).
+`gh workflow run release-dry-run.yml` builds, signs and verifies everything exactly like a
+release but skips the upload (no bundle, nothing reaches Central) and cannot access the
+Central Portal credentials (no `production` environment).
 
 ## Validating artifacts as an external consumer
 
@@ -158,7 +174,8 @@ Automated flow (Stage 8, `.github/workflows/release.yml`):
       the `production` GitHub Environment as `GPG_SIGNING_KEY` + `GPG_PASSPHRASE`, plus
       `MAVEN_USERNAME` / `MAVEN_PASSWORD` for the Central Portal token.
 - [x] Verify the distributed public key is still reachable on the supported PGP keyservers.
-- [x] Run the workflow `workflow_dispatch` `dry_run` before first tag (green, 2026-09-15).
+- [x] Run the workflow `workflow_dispatch` `release-dry-run.yml` before first tag
+      (green, 2026-09-14 local / 2026-09-15 UTC, key `AE4005A75393C9D7`).
 - [ ] Bump `rate-limit/pom.xml` (and `examples/pom.xml`) version + `CHANGELOG.md`.
 - [ ] Tag `vX.Y.Z` — the workflow validates the version match and publishes to Central.
 
