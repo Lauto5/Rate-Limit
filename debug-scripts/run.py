@@ -13,8 +13,12 @@ MODULES = {
     "core": "rate-limit-core",
     "inmemory": "rate-limit-inmemory",
     "redis": "rate-limit-redis",
+    "springboot": "rate-limit-spring-boot",
 }
-EXAMPLES = ["core-inmemory", "core-redis"]
+# Los ejemplos spring-boot-* requieren Java 17; sus tests (y los de redis)
+# se ejecutan en CI con 'mvn -f examples/pom.xml clean verify'.
+EXAMPLES = ["core-inmemory", "core-redis",
+            "spring-boot-inmemory", "spring-boot-redis"]
 
 DRY_RUN = False
 
@@ -93,7 +97,10 @@ def cmd_install(args):
 
 def cmd_examples(args):
     for example in EXAMPLES:
-        run(["mvn", "clean", "package"],
+        # --skipTests: aqui solo se valida que el consumidor compila/empaqueta
+        # contra los artefactos instalados; los tests de los ejemplos corren
+        # integros en CI con 'mvn -f examples/pom.xml clean verify'.
+        run(["mvn", "clean", "package", "-DskipTests"],
             cwd=os.path.join(REPO, "examples", example))
 
 
@@ -123,7 +130,7 @@ def build_parser():
 
     add("env", cmd_env, "muestra las versiones de Java/Maven/Python y disponibilidad de Docker")
     add("status", cmd_status, "git status resumido + ultimos commits")
-    add("compile", cmd_compile, "compila el reactor (core, inmemory, redis) y los ejemplos")
+    add("compile", cmd_compile, "compila el reactor (core, inmemory, redis, springboot) y los ejemplos")
     p_test = add("test", cmd_test, "ejecuta los tests del reactor (o de un modulo con -m)")
     p_test.add_argument("-m", "--module", choices=sorted(MODULES),
                         help="modulo a testear: " + ", ".join(sorted(MODULES)))

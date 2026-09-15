@@ -5,6 +5,26 @@ All notable changes to `io.github.lauto5:rate-limit` are documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `rate-limit-spring-boot` module: Spring Boot auto-configuration (Java 17+, Spring Boot 3.x)
+  that provisions a `RateLimitStore` (in-memory or Redis, selected via
+  `rate-limit.persistence.type`) and a `Clock` as `@ConditionalOnMissingBean` beans. The
+  consumer keeps building its own strongly typed `RateLimit` with the core API; no `RateLimit`
+  bean is auto-created.
+- New consumer examples under `examples/`: `spring-boot-inmemory` and `spring-boot-redis`
+  (the latter validated against a real Redis via Testcontainers).
+
+### Docs
+
+- Documentation restructured: `docs/getting-started.md`, per-algorithm guides, persistence
+  guides, Spring Boot integration guide and `docs/architecture.md` (imported from the former
+  `docs/ARCHITECTURE.md`). Root `README.md` rewritten as the landing page; `CONTRIBUTING.md`,
+  `PUBLISHING.md` and the examples README updated to match the real code, CI/CD and modules.
+- `debug-scripts/run.py` extended to cover the `spring-boot` module and the new examples.
+
 ## [1.0.0] - 2026-09-08
 
 First stable release, published to Maven Central.

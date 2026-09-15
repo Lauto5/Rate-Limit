@@ -6,9 +6,10 @@ only needs to add the combination of dependencies they want.
 ## Setup
 
 Both projects share the `examples/pom.xml` parent, which centralizes the common
-configuration (encoding, Java 8 target, `exec-maven-plugin` and `slf4j-simple`
-versions, and the versions of the library modules). The versions mirror those of
-the main `rate-limit/pom.xml` parent: when you update them in the reactor, keep
+configuration (encoding, Java 8 target for the core examples, `exec-maven-plugin`,
+`slf4j-simple` and surefire versions, the version of the library modules, and the
+Spring Boot BOM for the spring-boot examples under a Java 17 target). The versions mirror
+those of the main `rate-limit/pom.xml` parent: when you update them in the reactor, keep
 them in sync here. To build both examples at once:
 
 ```bash
@@ -66,9 +67,9 @@ mvn -f examples/spring-boot-inmemory compile exec:java
 
 ## spring boot + redis
 
-Dependencies: `rate-limit-core` + `rate-limit-redis` + `rate-limit-spring-boot`
-(+ `slf4j-simple`). The same contract, validated against a real Redis; the tests use
-Testcontainers.
+Dependencies: `rate-limit-core` + `rate-limit-redis` + `rate-limit-spring-boot`.
+SLF4J provider comes from Spring Boot itself (Logback, transitive). The same contract,
+validated against a real Redis; the tests use Testcontainers.
 
 Requires a reachable Redis server:
 
