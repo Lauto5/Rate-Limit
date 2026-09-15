@@ -265,49 +265,69 @@
 	</build>
 
 	<profiles>
-		<profile>
-			<id>publish</id>
-			<!-- Pipeline de release: 'mvn -Ppublish clean deploy' ejecuta todo sin
-			     pasos manuales intermedios (compile, test, sources, javadoc, firma
-			     GPG y bundle/subida a Central). Por defecto no sube ni publica nada:
-			     autoPublish=false: el alta final se confirma en Central Portal. -->
-			<build>
-				<plugins>
 
-					<!-- Firma criptografica de cada artifact (requisito de Central).
-					     Requiere una clave GPG local; los secretos viven en ~/.m2/settings.xml
-					     o como -Dgpg.keyname/-Dgpg.passphrase, nunca en el repositorio. -->
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-gpg-plugin</artifactId>
-						<executions>
-							<execution>
-								<id>sign-artifacts</id>
-								<goals>
-									<goal>sign</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
+<profile>
+  <id>publish</id>
+  <build>
+    <plugins>
+      <!-- Generate sources JAR -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
 
-					<!-- 'mvn deploy' genera central-bundle.zip con jar/sources/javadoc/firmas/
-					     checksums y lo sube al Central Portal. Credenciales: server 'central'
-					     en settings.xml (user token de central.sonatype.com). -->
-					<plugin>
-						<groupId>org.sonatype.central</groupId>
-						<artifactId>central-publishing-maven-plugin</artifactId>
-						<extensions>true</extensions>
-						<configuration>
-							<publishingServerId>central</publishingServerId>
-							<autoPublish>${central.autoPublish}</autoPublish>
-							<waitUntil>${central.waitUntil}</waitUntil>
-							<skipPublishing>${central.skipPublishing}</skipPublishing>
-						</configuration>
-					</plugin>
+      <!-- Generate Javadoc JAR -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-javadoc</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
 
-				</plugins>
-			</build>
-		</profile>
+      <!-- GPG signing -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <goals>
+              <goal>sign</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Central publishing -->
+      <plugin>
+        <groupId>org.sonatype.central</groupId>
+        <artifactId>central-publishing-maven-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <publishingServerId>central</publishingServerId>
+          <autoPublish>${central.autoPublish}</autoPublish>
+          <waitUntil>${central.waitUntil}</waitUntil>
+          <skipPublishing>${central.skipPublishing}</skipPublishing>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</profile>
+
 	</profiles>
 
 </project>
