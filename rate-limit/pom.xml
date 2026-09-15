@@ -66,7 +66,7 @@
 		<maven.gpg.plugin.version>3.2.8</maven.gpg.plugin.version>
 		<central.publishing.plugin.version>0.11.0</central.publishing.plugin.version>
 		<!-- Solo publican con '-Ppublish'; por defecto nunca suben nada. -->
-		<central.autoPublish>false</central.autoPublish>
+		<central.autoPublish>true</central.autoPublish>
 		<central.skipPublishing>false</central.skipPublishing>
 		<!-- Cuanto esperar tras la subida del bundle: 'validated' por defecto (el alta se
 		     confirma en el portal); 'published' para que el build esperen la confirmacion. -->
