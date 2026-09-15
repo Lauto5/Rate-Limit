@@ -1,0 +1,67 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>io.github.lauto5.examples</groupId>
+		<artifactId>rate-limit-examples</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>spring-boot-redis</artifactId>
+	<packaging>jar</packaging>
+	<name>rate limit example - spring boot + redis</name>
+	<description>Consumidor externo: Spring Boot auto-configuracion con persistencia en Redis (Lettuce).</description>
+
+	<!-- Spring Boot requiere Java 17+ -->
+	<properties>
+		<maven.compiler.release>17</maven.compiler.release>
+	</properties>
+
+	<dependencies>
+
+		<dependency>
+			<groupId>io.github.lauto5</groupId>
+			<artifactId>rate-limit-core</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>io.github.lauto5</groupId>
+			<artifactId>rate-limit-redis</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>io.github.lauto5</groupId>
+			<artifactId>rate-limit-spring-boot</artifactId>
+		</dependency>
+
+		<!-- SLF4J provider: lo aporta Spring Boot (Logback) via spring-boot-starter-test -->
+
+		<!-- Tests: valida el contrato del modulo desde un consumidor real + Testcontainers
+		     para un Redis real (version gestionada por el BOM de Spring Boot) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<configuration>
+					<mainClass>io.github.lauto5.example.SpringBootRedisApplication</mainClass>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>

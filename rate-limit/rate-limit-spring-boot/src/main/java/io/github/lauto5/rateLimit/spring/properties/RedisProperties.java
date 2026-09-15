@@ -1,15 +1,19 @@
 package io.github.lauto5.rateLimit.spring.properties;
 
-import io.github.lauto5.rateLimit.infrastructure.RedisStore;
-
 /**
  * Configuration for the Redis persistence adapter.
+ *
+ * <p>Properties classes must stay independent of the persistence implementations: the default
+ * namespace below mirrors {@code RedisStore.DEFAULT_NAMESPACE} (the Redis adapter) so this
+ * module has no coupling to the adapter's internals.
  */
 public class RedisProperties {
 
+	private static final String DEFAULT_NAMESPACE = "rate-limit";
+
 	private String url;
 
-	private String namespace = RedisStore.DEFAULT_NAMESPACE;
+	private String namespace = DEFAULT_NAMESPACE;
 
 	/**
 	 * @return the Redis connection URL (for example {@code redis://localhost:6379})
