@@ -131,8 +131,30 @@ conexión Lettuce es perezosa).
 Todo ello está documentado como trabajo futuro en
 `docs-for-agent-ia/feature-springboot/spring-boot-integration-opencode.md`.
 
+## Follow-up pre-merge (diagnóstico)
+
+Previo al merge, el diagnóstico `docs-for-agent-ia/feature-springboot/spring-boot-diagnostico-opencode.md`
+detectó dos hallazgos 🟡 y exigió validar el contrato del módulo con consumidores externos. Estado:
+
+- **🟡 Packaging / UX del consumidor — resuelto**: `rate-limit-spring-boot/README.md` (nuevo)
+  documenta el modelo de dependencias opcionales (`core` + un adapter, `inmemory` o `redis`, +
+  `spring-boot`), la configuración YAML y la tabla de beans provisionados.
+- **🟡 Acoplamiento `RedisProperties` → `RedisStore` — resuelto**: `RedisProperties` deja de
+  importar `RedisStore` y define su propio `DEFAULT_NAMESPACE = "rate-limit"`, que espeja
+  `RedisStore.DEFAULT_NAMESPACE` (opción 1 del diagnóstico); se descarta modificar `rate-limit-redis`
+  porque la feature prohíbe tocar los módulos existentes.
+- **Validación con consumidores externos**: dos nuevos consumidores en `examples/` (fuera del
+  reactor, como exige la distribución a Central):
+  - `examples/spring-boot-inmemory` — valida InMemory por defecto, override de store/`Clock` por
+    bean de usuario y API tipada sin casts.
+  - `examples/spring-boot-redis` — valida persistence Redis real (Testcontainers), API de dominio
+    end-to-end y `destroyMethod="close"` del store (ciclo de vida con el shutdown de Spring).
+  - `examples/pom.xml` incorpora los módulos y gestiona versiones (`rate-limit-spring-boot:1.0.1`,
+    BOM `spring-boot-dependencies:3.5.16`, `maven-surefire-plugin` 3.5.3).
+
 ## References
 
 - Feature documentation: `docs-for-agent-ia/feature-springboot/spring-boot-integration-opencode.md`
+- Diagnostic: `docs-for-agent-ia/feature-springboot/spring-boot-diagnostico-opencode.md`
 - Change doc template: `docs/changes/TEMPLATE.md`
 - PR: `N/A` (pendiente de merge a `main`)

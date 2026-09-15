@@ -51,3 +51,31 @@ If the server listens on another host/port:
 ```bash
 mvn -f examples/core-redis compile exec:java -Dredis.url=redis://localhost:6390
 ```
+
+## spring boot + inmemory
+
+Dependencies: `rate-limit-core` + `rate-limit-inmemory` + `rate-limit-spring-boot`
+(+ Spring Boot, transitivo). Validates the distribution contract of the Spring Boot
+integration: the auto-configuration provisions the store and `Clock` from
+`application.yml`, and the application builds its own `RateLimit<FixedWindowPolicy>`
+bean. Requires Java 17+.
+
+```bash
+mvn -f examples/spring-boot-inmemory compile exec:java
+```
+
+## spring boot + redis
+
+Dependencies: `rate-limit-core` + `rate-limit-redis` + `rate-limit-spring-boot`
+(+ `slf4j-simple`). The same contract, validated against a real Redis; the tests use
+Testcontainers.
+
+Requires a reachable Redis server:
+
+```bash
+docker run -d --rm --name ratelimit-example-redis -p 6379:6379 redis:7-alpine
+mvn -f examples/spring-boot-redis compile exec:java
+```
+
+The tests (`mvn verify`) spin their own Redis container, so no manual setup is needed.
+The Redis URL is overridable via the `RATE_LIMIT_REDIS_URL` environment variable.
