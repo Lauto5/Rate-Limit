@@ -29,11 +29,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17 (temurin)
+      # JDK 21: el build de release usa el mismo toolchain que CI valida en su
+      # check primario (ci.yml corre 17 y 21). El bytecode publicado no cambia
+      # (los modulos compilan con --release 8 / --release 17); aqui corre el
+      # pipeline de firma/publicacion completo con el JDK LTS vigente.
+      - name: Set up JDK 21 (temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
           cache: maven
 
       - name: Install & prime GPG signing key
