@@ -113,15 +113,19 @@ jobs:
             # (central-publishing 0.11.0 skips the bundle + upload entirely here).
             echo "== DRY RUN: building and signing everything, upload skipped =="
             mvn -B -f rate-limit/pom.xml -Ppublish clean deploy \
-              -Dgpg.keyname="$KEYID" -Dgpg.passphrase="$MAVEN_GPG_PASSPHRASE" \
+              -Dgpg.keyname="$KEYID" \
               -Dcentral.skipPublishing=true
           else
             echo "== Publishing $GITHUB_REF_NAME (auto-publish, wait until PUBLISHED) =="
             mvn -B -f rate-limit/pom.xml -Ppublish clean deploy \
-              -Dgpg.keyname="$KEYID" -Dgpg.passphrase="$MAVEN_GPG_PASSPHRASE" \
+              -Dgpg.keyname="$KEYID" \
               -Dcentral.autoPublish=true -Dcentral.waitUntil=published
           fi
         env:
           KEYID: ${{ steps.gpg-keyid.outputs.keyid }}
+          # setup-java imports the key into an isolated GPG home and delivers the
+          # passphrase through this env var, which is maven-gpg-plugin's default
+          # passphraseEnvName. Do NOT use -Dgpg.passphrase: it is deprecated and
+          # fails on hosted runners ("Too much data for IPC layer").
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
