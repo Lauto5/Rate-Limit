@@ -1,0 +1,127 @@
+name: Release
+
+# Tag-driven release to Maven Central (Stage 8 of the publishing plan).
+#
+# A tag `vX.Y.Z` (e.g. v1.0.1, v1.1.0, v2.0.0) triggers the pipeline:
+#   git tag -> GitHub Actions -> mvn -Ppublish clean deploy -> Maven Central
+#
+# Required secrets in the GitHub Environment "production":
+#   MAVEN_USERNAME   Central Portal user token username
+#   MAVEN_PASSWORD   Central Portal user token password
+#   GPG_SIGNING_KEY  ASCII-armored private key (same key distributed to the
+#                    PGP keyservers supported by Central, e.g. keyserver.ubuntu.com)
+#   GPG_PASSPHRASE   passphrase of the signing key
+#
+# The version guard ensures the reactor <version> matches the tag (no SNAPSHOTs,
+# no "forgetting to bump"). Nothing is published when they do not match.
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Build + sign + bundle but do NOT upload to Central (dry run)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Publish ${{ github.ref_name }} to Maven Central
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+          gpg-private-key: ${{ secrets.GPG_SIGNING_KEY }}
+          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Resolve GPG signing key id
+        id: gpg-keyid
+        run: |
+          KEYID=$(gpg --batch --with-colons --list-secret-keys 2>/dev/null \
+            | awk -F: '/^(sec|ssb)/{print $5; exit}')
+          if [ -z "$KEYID" ]; then
+            echo "::error::No secret GPG key found. Check the GPG_SIGNING_KEY secret."
+            exit 1
+          fi
+          echo "keyid=$KEYID"
+          echo "keyid=$KEYID" >> "$GITHUB_OUTPUT"
+
+      - name: Create Maven settings with Central credentials
+        run: |
+          mkdir -p "$HOME/.m2"
+          cat > "$HOME/.m2/settings.xml" <<'EOF'
+          <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+            <servers>
+              <server>
+                <id>central</id>
+                <username>__MAVEN_USERNAME__</username>
+                <password>__MAVEN_PASSWORD__</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
+          sed -i \
+              -e "s|__MAVEN_USERNAME__|$MAVEN_USERNAME|g" \
+              -e "s|__MAVEN_PASSWORD__|$MAVEN_PASSWORD|g" \
+              "$HOME/.m2/settings.xml"
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+
+      - name: Validate tag matches reactor version
+        if: github.ref_type == 'tag'
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          VERSION=$(python3 - "$TAG" <<'PY' 2>/dev/null || true
+          import os, sys, xml.etree.ElementTree as ET
+          root = ET.parse('rate-limit/pom.xml').getroot()
+          ns = {'m': 'http://maven.apache.org/POM/4.0.0'}
+          print(root.find('m:version', ns).text)
+          PY
+          EXPECTED="${TAG#v}"
+          if [ "$VERSION" != "$EXPECTED" ]; then
+            echo "::error::Tag '$TAG' does not match the reactor version '$VERSION'. Bump the version in rate-limit/pom.xml before tagging the release."
+            echo "::error::Expected '$EXPECTED'; found '$VERSION'. Nothing was published."
+            exit 1
+          fi
+          echo "Tag '$TAG' matches reactor version '$VERSION'."
+
+      - name: Deploy to Maven Central
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            # Build, sign and validate the full pipeline WITHOUT uploading to Central
+            # (central-publishing 0.11.0 skips the bundle + upload entirely here).
+            echo "== DRY RUN: building and signing everything, upload skipped =="
+            mvn -B -f rate-limit/pom.xml -Ppublish clean deploy \
+              -Dgpg.keyname="$KEYID" -Dgpg.passphrase="$MAVEN_GPG_PASSPHRASE" \
+              -Dcentral.skipPublishing=true
+          else
+            echo "== Publishing $GITHUB_REF_NAME (auto-publish, wait until PUBLISHED) =="
+            mvn -B -f rate-limit/pom.xml -Ppublish clean deploy \
+              -Dgpg.keyname="$KEYID" -Dgpg.passphrase="$MAVEN_GPG_PASSPHRASE" \
+              -Dcentral.autoPublish=true -Dcentral.waitUntil=published
+          fi
+        env:
+          KEYID: ${{ steps.gpg-keyid.outputs.keyid }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}

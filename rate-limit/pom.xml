@@ -68,6 +68,9 @@
 		<!-- Solo publican con '-Ppublish'; por defecto nunca suben nada. -->
 		<central.autoPublish>false</central.autoPublish>
 		<central.skipPublishing>false</central.skipPublishing>
+		<!-- Cuanto esperar tras la subida del bundle: 'validated' por defecto (el alta se
+		     confirma en el portal); 'published' para que el build esperen la confirmacion. -->
+		<central.waitUntil>validated</central.waitUntil>
 	</properties>
 
 	<dependencyManagement>
@@ -297,7 +300,7 @@
 						<configuration>
 							<publishingServerId>central</publishingServerId>
 							<autoPublish>${central.autoPublish}</autoPublish>
-							<waitUntil>validated</waitUntil>
+							<waitUntil>${central.waitUntil}</waitUntil>
 							<skipPublishing>${central.skipPublishing}</skipPublishing>
 						</configuration>
 					</plugin>
