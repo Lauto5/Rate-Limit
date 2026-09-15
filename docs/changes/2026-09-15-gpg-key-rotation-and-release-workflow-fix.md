@@ -41,7 +41,7 @@ falla con el mismo error de IPC. Por eso la solución usa un `GNUPGHOME` aislado
 
 ### Clave GPG renovada (decisión del usuario)
 
-- Nueva clave RSA-4096, mismo uid (`lautaro nahuel ponce <lauto5dev@gmail.com>`), **sin
+- Nueva clave RSA-4096, mismo uid, **sin
   expiración** (continuidad del pipeline de CI).
   - Key id (largo): `AE4005A75393C9D7`
   - Fingerprint: `D8A3 90DA 7E6C 673D 8660 C43E AE40 05A7 5393 C9D7`
