@@ -10,7 +10,8 @@ name: Release
 #   MAVEN_PASSWORD   Central Portal user token password
 #   GPG_SIGNING_KEY  ASCII-armored private key (same key distributed to the
 #                    PGP keyservers supported by Central, e.g. keyserver.ubuntu.com)
-#   GPG_PASSPHRASE   passphrase of the signing key
+#   GPG_PASSPHRASE   passphrase of the signing key (used once, to prime the gpg
+#                    agent; signing itself happens via the agent's cache)
 #
 # The version guard ensures the reactor <version> matches the tag (no SNAPSHOTs,
 # no "forgetting to bump"). Nothing is published when they do not match.
@@ -48,8 +49,11 @@ jobs:
           distribution: temurin
           java-version: 17
           cache: maven
+          # Import the private key only. The passphrase is delivered to the gpg
+          # agent directly (see "Install & prime GPG agent"), never to the
+          # maven-gpg-plugin (the gpg.*passphrase* paths are deprecated and fail
+          # on hosted runners with "Too much data for IPC layer").
           gpg-private-key: ${{ secrets.GPG_SIGNING_KEY }}
-          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Resolve GPG signing key id
         id: gpg-keyid
@@ -62,6 +66,36 @@ jobs:
           fi
           echo "keyid=$KEYID"
           echo "keyid=$KEYID" >> "$GITHUB_OUTPUT"
+
+      - name: Install & prime GPG agent
+        id: gpg-prime
+        env:
+          KEYID: ${{ steps.gpg-keyid.outputs.keyid }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          # Deliver the passphrase to the gpg agent up front and cache it for the
+          # whole build. maven-gpg-plugin then signs WITHOUT a passphrase (the
+          # agent serves it from its cache), which avoids the "--pinentry-mode
+          # loopback + passphrase over IPC" path that fails on hosted runners
+          # ("gpg: signing failed: Too much data for IPC layer").
+          mkdir -p "$HOME/.gnupg"
+          chmod 700 "$HOME/.gnupg"
+          printf '%s\n' 'pinentry-mode loopback' > "$HOME/.gnupg/gpg.conf"
+          printf '%s\n' \
+            'allow-loopback-pinentry' \
+            'default-cache-ttl 3600' \
+            'max-cache-ttl 7200' >> "$HOME/.gnupg/gpg-agent.conf"
+          gpgconf --reload gpg-agent
+
+          # Prime: sign a scratch file so the agent keeps the passphrase cached.
+          echo -n scratch > /tmp/gpg-prime.bin
+          gpg --batch --yes --pinentry-mode loopback \
+            --passphrase "$GPG_PASSPHRASE" \
+            --local-user "$KEYID" \
+            --output /tmp/gpg-prime.sig --detach-sign /tmp/gpg-prime.bin 2>&1 \
+            | sed 's/^/gpg-prime: /'
+          gpg --verify /tmp/gpg-prime.sig /tmp/gpg-prime.bin 2>&1 \
+            | sed 's/^/gpg-prime: /'
 
       - name: Create Maven settings with Central credentials
         run: |
@@ -123,9 +157,6 @@ jobs:
           fi
         env:
           KEYID: ${{ steps.gpg-keyid.outputs.keyid }}
-          # setup-java imports the key into an isolated GPG home and delivers the
-          # passphrase through this env var, which is maven-gpg-plugin's default
-          # passphraseEnvName. Do NOT use -Dgpg.passphrase: it is deprecated and
-          # fails on hosted runners ("Too much data for IPC layer").
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          # No GPG passphrase here: the agent was primed above and serves it from
+          # its cache while signing (gpg-agent.conf caches it for up to 7200s).
           GITHUB_REF_NAME: ${{ github.ref_name }}
